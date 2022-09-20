@@ -6,13 +6,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pop-up</title>
   <style>
+    * { 
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      min-height: 100%;
+      background: #fff;
+      color: #000;
+    }
+    body {
+      font-size: 1.4rem;
+      text-rendering: optimizeLegibility;
+    }
+    .layout{
+      width: 200px;
+      height: 300px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .container{
+      padding: 1rem;
+    }
+    #status-container{
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    #toggle-btn{
+      padding: 1rem 2rem;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <main>
-    <div class="container" id="title-container">team-shark</div>
-    <div class="container" id="status-container"></div>
-    <div class="container" id="button-container"></div>
+    <div class="layout">
+      <section class="container" id="title-container"><h1>sonar</h1></section>
+      <section class="container" id="status-container">
+        <h6>current status</h6>
+        <p id="status-p">off</p>
+      </section>
+      <section class="container" id="button-container">
+        <button id="toggle-btn">toggle</button>
+      </section>
+    </div>
   </main>
 </body>
 </html>
