@@ -1,0 +1,19 @@
+{
+  "name": "sonar-mv3-proto",
+  "version": "1.0.0",
+  "description": "web plugin based on openCV for visually impaired people",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adult-sharks/sonar-mv3.git"
+  },
+  "author": "adult-sharks",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/adult-sharks/sonar-mv3/issues"
+  },
+  "homepage": "https://github.com/adult-sharks/sonar-mv3#readme"
+}
