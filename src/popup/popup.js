@@ -9,7 +9,6 @@ const initializeWindow = async () => {
 const sendQuery = () => {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ key: "query" }, function (response) {
-      console.log("getting message");
       if (response.active === true) {
         console.log("is on");
         statusMessage.innerText = "active";
@@ -34,7 +33,6 @@ const toggleStream = () => {
     chrome.runtime.sendMessage({ key: "toggle" }, function (response) {
       if (response.clear) {
         resolve();
-        console.log("successful");
       } else {
         reject();
       }
