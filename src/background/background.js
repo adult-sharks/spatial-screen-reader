@@ -34,8 +34,6 @@ const getActiveTabId = new Promise((resolve, reject) => {
 
 const runStream = () => {};
 
-// https://stackoverflow.com/questions/44056271/chrome-runtime-onmessage-response-with-async-await
-
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   const getStatus = createGetStatus();
 
@@ -56,10 +54,15 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
             files: ["./src/inject/inject.js"],
           });
         }
+        sendResponse({ clear: true });
       });
       break;
     case "inject":
       break;
   }
   return true;
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  chrome.storage.local.clear();
 });
