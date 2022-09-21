@@ -22,6 +22,20 @@ const createGetStatus = () => {
   });
 };
 
+const getActiveTabId = new Promise((resolve, reject) => {
+  chrome.tabs.query({ active: true }, function (tabs) {
+    if (tabs) {
+      resolve(tabs[0].id);
+    } else {
+      reject();
+    }
+  });
+});
+
+const runStream = () => {};
+
+// https://stackoverflow.com/questions/44056271/chrome-runtime-onmessage-response-with-async-await
+
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   const getStatus = createGetStatus();
 
@@ -33,9 +47,14 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       });
       break;
     case "toggle":
-      getStatus.then((status) => {
+      getStatus.then(async (status) => {
         setStatus(status);
         if (status === true) {
+          const targetTabId = await getActiveTabId;
+          chrome.scripting.executeScript({
+            target: { tabId: targetTabId },
+            files: ["./src/inject/inject.js"],
+          });
         }
       });
       break;
