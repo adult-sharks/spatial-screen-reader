@@ -22,6 +22,18 @@ const createGetStatus = () => {
   });
 };
 
+const getActiveTabId = new Promise((resolve, reject) => {
+  chrome.tabs.query({ active: true }, function (tabs) {
+    if (tabs) {
+      resolve(tabs[0].id);
+    } else {
+      reject();
+    }
+  });
+});
+
+const runStream = () => {};
+
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   const getStatus = createGetStatus();
 
@@ -33,14 +45,24 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       });
       break;
     case "toggle":
-      getStatus.then((status) => {
+      getStatus.then(async (status) => {
         setStatus(status);
         if (status === true) {
+          const targetTabId = await getActiveTabId;
+          chrome.scripting.executeScript({
+            target: { tabId: targetTabId },
+            files: ["./src/inject/inject.js"],
+          });
         }
+        sendResponse({ clear: true });
       });
       break;
     case "inject":
       break;
   }
   return true;
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  chrome.storage.local.clear();
 });

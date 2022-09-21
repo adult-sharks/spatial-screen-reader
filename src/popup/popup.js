@@ -4,7 +4,6 @@ const toggleMessage = document.getElementById("toggle-p");
 
 const initializeWindow = async () => {
   statusMessage.innerText = "loading";
-  await chrome.storage.local.clear();
 };
 
 const sendQuery = () => {
@@ -30,16 +29,24 @@ const sendQuery = () => {
   });
 };
 
-const toggleStream = async () => {
-  await chrome.runtime.sendMessage({ key: "toggle" });
+const toggleStream = () => {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ key: "toggle" }, function (response) {
+      if (response.clear) {
+        resolve();
+        console.log("successful");
+      } else {
+        reject();
+      }
+    });
+  });
 };
 
 const addToggleListener = () => {
   toggleBtn.addEventListener("click", async (e) => {
     e.preventDefault();
-    await sendQuery();
-    // sendMessage는 콜백함수가 주어지지 않으면 Promise를 반환합니다.
     await toggleStream();
+    await sendQuery();
   });
 };
 
