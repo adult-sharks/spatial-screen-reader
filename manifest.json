@@ -25,5 +25,10 @@
       "matches": ["http://*/*", "https://*/*", "<all_urls>"],
       "js": ["./src/inject/inject.js"]
     }
+  ],
+  "permissions": [
+    "tabs",
+    "storage",
+    "alarms"
   ]
 }
