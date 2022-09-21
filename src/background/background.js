@@ -1,12 +1,12 @@
 const setStatus = (status) => {
   if (status === true) {
-    chrome.storage.local.set({ currentStatus: "false" });
-  } else if (status === false) {
     chrome.storage.local.set({ currentStatus: "true" });
+  } else if (status === false) {
+    chrome.storage.local.set({ currentStatus: "false" });
   }
 };
 
-const createGetStatus = () => {
+const getStatus = () => {
   return new Promise((resolve, reject) => {
     chrome.storage.local.get(["currentStatus"], ({ currentStatus }) => {
       if (currentStatus === undefined) {
@@ -22,37 +22,52 @@ const createGetStatus = () => {
   });
 };
 
-const getActiveTabId = new Promise((resolve, reject) => {
-  chrome.tabs.query({ active: true }, function (tabs) {
-    if (tabs) {
-      resolve(tabs[0].id);
-    } else {
-      reject();
-    }
+const getActiveTabId = () => {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs.length > 0) {
+        console.log(tabs);
+        resolve(tabs[0].id);
+      } else {
+        reject();
+      }
+    });
   });
-});
+};
 
-const runStream = () => {};
+const notifyInjection = (id) => {
+  console.log(id);
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(id, { key: "notify" }, function (response) {
+      if (response.active === true) {
+        console.log("received");
+        resolve();
+      } else {
+        reject();
+      }
+    });
+  });
+};
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  const getStatus = createGetStatus();
-
   switch (message.key) {
     case "query":
-      getStatus.then((status) => {
-        console.log("sending message");
+      getStatus().then((status) => {
         sendResponse({ active: status });
       });
       break;
     case "toggle":
-      getStatus.then(async (status) => {
+      getStatus().then(async (status) => {
+        status = !status;
         setStatus(status);
         if (status === true) {
-          const targetTabId = await getActiveTabId;
-          chrome.scripting.executeScript({
+          const targetTabId = await getActiveTabId();
+          await chrome.scripting.executeScript({
             target: { tabId: targetTabId },
             files: ["./src/inject/inject.js"],
           });
+          await notifyInjection(targetTabId);
+          console.log("injected");
         }
         sendResponse({ clear: true });
       });
