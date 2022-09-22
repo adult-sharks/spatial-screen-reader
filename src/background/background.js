@@ -35,15 +35,27 @@ const getActiveTabId = () => {
   });
 };
 
-const notifyInjection = (id) => {
-  console.log(id);
+const checkInjection = (id) => {
   return new Promise((resolve, reject) => {
-    chrome.tabs.sendMessage(id, { key: "notify" }, function (response) {
-      if (response.active === true) {
-        console.log("received");
-        resolve();
-      } else {
+    chrome.tabs.sendMessage(id, { key: "check" }, function (response) {
+      if (!response) {
         reject();
+      } else if (response.received === true) {
+        resolve();
+      }
+    });
+  });
+};
+
+const toggleInjection = (id, command) => {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(id, { key: command }, function (response) {
+      if (!response) {
+        reject();
+      } else if (response.active === true) {
+        resolve(true);
+      } else if (response.active === false) {
+        resolve(false);
       }
     });
   });
@@ -60,14 +72,29 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       getStatus().then(async (status) => {
         status = !status;
         setStatus(status);
+        const targetTabId = await getActiveTabId();
         if (status === true) {
-          const targetTabId = await getActiveTabId();
-          await chrome.scripting.executeScript({
-            target: { tabId: targetTabId },
-            files: ["./src/inject/inject.js"],
-          });
-          await notifyInjection(targetTabId);
-          console.log("injected");
+          try {
+            await checkInjection(targetTabId);
+          } catch (err) {
+            await chrome.scripting.executeScript({
+              target: { tabId: targetTabId },
+              files: ["./src/inject/inject.js"],
+            });
+          } finally {
+            await toggleInjection(targetTabId, "on");
+          }
+        } else if (status === false) {
+          try {
+            await checkInjection(targetTabId);
+          } catch {
+            await chrome.scripting.executeScript({
+              target: { tabId: targetTabId },
+              files: ["./src/inject/inject.js"],
+            });
+          } finally {
+            await toggleInjection(targetTabId, "off");
+          }
         }
         sendResponse({ clear: true });
       });
