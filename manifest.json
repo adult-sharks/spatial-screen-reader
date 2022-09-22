@@ -20,16 +20,21 @@
     "64": "./asset/icon/icon-64.png",
     "128": "./asset/icon/icon-128.png"
   },
-  "content_scripts": [
-    {
-      "matches": ["http://*/*", "https://*/*", "<all_urls>"],
-      "js": ["./src/inject/inject.js"]
-    }
-  ],
+
   "permissions": [
     "tabs",
     "storage",
     "alarms",
-    "scripting"
+    "scripting",
+    "tabCapture"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ], 
+  "web_accessible_resources": [
+    {
+      "resources": ["/src/handler/handler.html"],
+      "matches": ["<all_urls>"]
+    }
   ]
 }
