@@ -4,7 +4,46 @@ const toggleMessage = document.getElementById("toggle-p");
 
 const initializeWindow = async () => {
   statusMessage.innerText = "loading";
+  // chrome.storage.local.clear(); // only for test purpose
 };
+
+// const sendStreamToHandler = (mediaStream, handlerTab) => {
+//   if (!mediaStream) {
+//     console.error(
+//       "Error starting tab capture: " +
+//         (chrome.runtime.lastError.message || "UNKNOWN")
+//     );
+//     return;
+//   }
+//   if (handlerTab != null) {
+//     handlerTab.close();
+//   }
+//   chrome.tabs.create({
+//     url: chrome.extension.getURL("./src/handler/handler.html"),
+//     selected: true,
+//   });
+//   // handlerTab = window.open("./src/handler/handler.html");
+//   // handlerTab.currentStream = mediaStream;
+// };
+
+// const startStream = () => {
+//   // const { h, w } = getSize();
+//   const handlerTab = null;
+
+//   chrome.tabCapture.capture(
+//     {
+//       audio: false,
+//       video: true,
+//     },
+//     (mediaStream) => {
+//       sendStreamToHandler(mediaStream, handlerTab);
+//     }
+//   );
+//   chrome.tabs.create({
+//     url: chrome.extension.getURL("./src/handler/handler.html"),
+//     selected: true,
+//   });
+// };
 
 const sendQuery = () => {
   return new Promise((resolve, reject) => {
@@ -13,6 +52,7 @@ const sendQuery = () => {
         console.log("is on");
         statusMessage.innerText = "active";
         toggleMessage.innerText = "off";
+        // startStream();
         resolve();
       } else if (response.active === false) {
         console.log("is off");
