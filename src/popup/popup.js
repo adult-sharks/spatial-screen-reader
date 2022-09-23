@@ -7,7 +7,7 @@ const initializeWindow = async () => {
   // chrome.storage.local.clear(); // only for test purpose
 };
 
-// const sendStreamToHandler = (mediaStream, handlerTab) => {
+// const sendStreamToHandler = (medi aStream, handlerTab) => {
 //   if (!mediaStream) {
 //     console.error(
 //       "Error starting tab capture: " +
