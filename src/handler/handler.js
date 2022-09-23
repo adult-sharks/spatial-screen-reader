@@ -58,6 +58,37 @@ const canvasModule = async (player) => {
 	edgeDetection(player, streamCanvas)
 };
 
+// ==== AUDIO MODULE ==== //
+const initialFreq = 50;
+const initialVol = 1;
+
+// create web audio api context
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+// create Oscillator and gain node
+const oscillator = audioCtx.createOscillator();
+const gainNode = audioCtx.createGain();
+
+// connect oscillator to gain node to speakers
+oscillator.connect(gainNode);
+gainNode.connect(audioCtx.destination);
+
+oscillator.detune.value = 0; // value in cents
+oscillator.start(0);
+
+// Set default parameters related to audio
+gainNode.gain.value = initialVol;
+oscillator.frequency.value = initialFreq;
+gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+
+const setVolume = (param, my) => {
+  //set freq corresponding to y cordinate
+  oscillator.frequency.value = initialFreq + 50 * (my / h)
+  //listen to brightness level as param at cursor position (MAX 255, MIN 0)
+  gainNode.gain.exponentialRampToValueAtTime(param / 100, audioCtx.currentTime + 0.1);
+}
+
 const getCoordinateData = () => {  
   chrome.storage.local.get(["mouseX", "mouseY"], function(result) {
 		var mx = result.mouseX;
@@ -73,7 +104,7 @@ const getCoordinateData = () => {
 		vol.innerText = brightness.toString();
 
 		setVolume(brightness, my);
-		
+
 		clearTimeout(timer);
 		timer = setTimeout(() => {
 			setVolume(1, my)
@@ -82,15 +113,15 @@ const getCoordinateData = () => {
 };
 
 window.addEventListener("load", async (e) => {
-    var player = document.getElementById("player");
+	var player = document.getElementById("player");
 
-    player.srcObject = window.currentStream;
-    player.addEventListener("canplay", async (e) => {
-        e.muted = true;
-        e.play();
-    });
+	player.srcObject = window.currentStream;
+	player.addEventListener("canplay", async (e) => {
+		e.muted = true;
+		e.play();
+	});
 
-    await canvasModule(player);
-    chrome.storage.onChanged.addListener(getCoordinateData);
+	await canvasModule(player);
+	chrome.storage.onChanged.addListener(getCoordinateData);
 });
   
