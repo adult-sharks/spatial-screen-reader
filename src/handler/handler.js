@@ -1,4 +1,3 @@
-//test1
 var h;
 var w;
 var timer;
@@ -129,9 +128,10 @@ window.addEventListener("load", async (e) => {
   chrome.storage.onChanged.addListener(getCoordinateData);
 });
 
-// ==== SHUTDOWN MODULE ==== //
+window.addEventListener("beforeunload", shutdownHandler);
 
-function shutdownHandler() {
+// ==== SHUTDOWN MODULE ==== //
+const shutdownHandler = () => {
   // Check whether current stream exists
   if (!window.currentStream) {
     return;
@@ -139,12 +139,13 @@ function shutdownHandler() {
 
   // Empty the source object and cut off the stream track
   var player = document.getElementById("player");
-  player.srcObject = null;
   var tracks = window.currentStream.getTracks();
-  for (var i = 0; i < tracks.length; ++i) {
+
+	player.srcObject = null;
+  window.currentStream = null;
+	for (var i = 0; i < tracks.length; ++i) {
     tracks[i].stop();
   }
-  window.currentStream = null;
 
   // Clear screen interval and remove event listener
   clearInterval(screenInterval);
