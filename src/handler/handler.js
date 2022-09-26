@@ -10,7 +10,7 @@ const vol = document.getElementById("vol");
 
 const readLocalStorage = async (key) => {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get([key], function (result) {
+    chrome.storage.local.get([key], (result) => {
       if (result[key] == undefined) {
         reject();
       } else {
@@ -128,3 +128,28 @@ window.addEventListener("load", async (e) => {
   await canvasModule(player);
   chrome.storage.onChanged.addListener(getCoordinateData);
 });
+
+// ==== SHUTDOWN MODULE ==== //
+
+function shutdownHandler() {
+  // Check whether current stream exists
+  if (!window.currentStream) {
+    return;
+  }
+
+  // Empty the source object and cut off the stream track
+  var player = document.getElementById("player");
+  player.srcObject = null;
+  var tracks = window.currentStream.getTracks();
+  for (var i = 0; i < tracks.length; ++i) {
+    tracks[i].stop();
+  }
+  window.currentStream = null;
+
+  // Clear screen interval and remove event listener
+  clearInterval(screenInterval);
+  chrome.storage.onChanged.removeListener(getCoordinateData());
+
+  // Close the window
+  window.close();
+}
