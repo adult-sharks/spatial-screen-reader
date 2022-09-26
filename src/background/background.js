@@ -26,7 +26,6 @@ const getActiveTabId = () => {
   return new Promise((resolve, reject) => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (tabs.length > 0) {
-        console.log(tabs);
         resolve(tabs[0].id);
       } else {
         reject();
@@ -61,6 +60,21 @@ const toggleInjection = (id, command) => {
   });
 };
 
+const requestHandlerPeerId = () => {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      { key: "requestHandlerPeerId" },
+      function (response) {
+        if (response) {
+          resolve(response.id);
+        } else {
+          reject();
+        }
+      }
+    );
+  });
+};
+
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
     case "query":
@@ -79,7 +93,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
           } catch (err) {
             await chrome.scripting.executeScript({
               target: { tabId: targetTabId },
-              files: ["./src/inject/inject.js"],
+              files: ["./src/inject/inject.js", "./src/lib/peerjs.min.js"],
             });
           } finally {
             await toggleInjection(targetTabId, "on");
@@ -90,7 +104,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
           } catch {
             await chrome.scripting.executeScript({
               target: { tabId: targetTabId },
-              files: ["./src/inject/inject.js"],
+              files: ["./src/inject/inject.js", "./src/lib/peerjs.min.js"],
             });
           } finally {
             await toggleInjection(targetTabId, "off");
@@ -99,7 +113,12 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         sendResponse({ clear: true });
       });
       break;
-    case "inject":
+    case "triggerRequestHandlerPeerId":
+      requestHandlerPeerId().then((handlerPeerId) => {
+        sendResponse({ key: handlerPeerId });
+      });
+      break;
+    default:
       break;
   }
   return true;
