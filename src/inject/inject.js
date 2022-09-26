@@ -6,36 +6,56 @@
 
 let capturedStream = null;
 let handlerTab = null;
+const peer = new Peer({ debug: 2 });
+peer.on("error", (err) => {
+  console.log(err);
+});
 
-const startStream = async () => {
+const initConnection = async () => {
   const url = chrome.runtime.getURL("./src/handler/handler.html");
-  capturedStream = await navigator.mediaDevices.getDisplayMedia({
-    video: true,
-    audio: false,
-  });
-  sendStreamToHandler(capturedStream, url);
-};
+  // capturedStream = await navigator.mediaDevices.getDisplayMedia({
+  //   video: true,
+  //   audio: false,
+  // });
 
-const sendStreamToHandler = async (capturedStream, url) => {
-  if (capturedStream == null) {
-    console.error("Error starting tab capture");
-    return;
-  }
+  // if (capturedStream == null) {
+  //   console.error("Error starting tab capture");
+  //   return;
+  // }
   if (handlerTab !== null) {
     handlerTab.close();
   }
+
   handlerTab = window.open(url);
-  const peer = new Peer({ debug: 2 });
+
   await new Promise((resolve, reject) => {
-    setTimeout(resolve, 400);
+    setTimeout(resolve, 1000);
   });
   const handlerPeerId = await requestHandlerPeerId();
   console.log(handlerPeerId);
   // const call = peer.call(handlerPeerId, capturedStream);
   const conn = peer.connect(handlerPeerId);
   conn.on("open", () => {
-    conn.send("hi!");
+    conn.send("connected");
   });
+  conn.on("data", (data) => {
+    if (data === "connected") {
+      startStream(handlerPeerId);
+    }
+  });
+};
+
+const startStream = async (handlerPeerId) => {
+  capturedStream = await navigator.mediaDevices.getDisplayMedia({
+    video: true,
+    audio: false,
+  });
+  if (capturedStream == null) {
+    console.error("Error starting tab capture");
+    return;
+  }
+  const call = peer.call(handlerPeerId, capturedStream);
+  console.log("called handler");
 };
 
 const stopStream = () => {
@@ -70,7 +90,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     case "on":
       sendResponse({ active: true });
       console.log("toggle-on");
-      startStream();
+      initConnection();
       break;
     case "off":
       sendResponse({ active: false });

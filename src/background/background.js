@@ -93,7 +93,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
           } catch (err) {
             await chrome.scripting.executeScript({
               target: { tabId: targetTabId },
-              files: ["./src/inject/inject.js", "./src/lib/peerjs.min.js"],
+              files: ["./src/lib/peerjs.min.js", "./src/inject/inject.js"],
             });
           } finally {
             await toggleInjection(targetTabId, "on");
@@ -104,7 +104,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
           } catch {
             await chrome.scripting.executeScript({
               target: { tabId: targetTabId },
-              files: ["./src/inject/inject.js", "./src/lib/peerjs.min.js"],
+              files: ["./src/lib/peerjs.min.js", "./src/inject/inject.js"],
             });
           } finally {
             await toggleInjection(targetTabId, "off");
