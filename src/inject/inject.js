@@ -1,59 +1,90 @@
-// const getSize = () => {
-//   const h = window.innerHeight;
-//   const w = window.innerWidth;
-//   return { h, w };
-// };
+/////////////////////
+// local variables //
+/////////////////////
 
-let capturedStream = null;
+let screenStream = null;
 let handlerTab = null;
+const peer = new Peer({ debug: 2 });
+peer.on("error", (err) => {
+  console.log(err);
+});
 
-// const startStream = () => {
-//   const { h, w } = getSize();
-//   const handlerTab = null;
+////////////////
+// core logic //
+////////////////
 
-//   chrome.tabCapture.capture(
-//     {
-//       audio: false,
-//       video: true,
-//       videoConstraints: {},
-//     },
-//     (mediaStream) => {
-//       sendStreamToHandler(mediaStream, handlerTab);
-//     }
-//   );
-//   handlerTab = window.open("./src/handler/handler.html");
-//   chrome.tabs.create({
-//     url: chrome.extension.getURL("./src/handler/handler.html"),
-//     selected: true,
-//   });
-// };
+const initConnection = async () => {
+  const handlerUrl = chrome.runtime.getURL("./src/handler/handler.html");
+  if (handlerTab !== null) {
+    handlerTab.close();
+  }
 
-const startStream = async () => {
-  const url = chrome.runtime.getURL("./src/handler/handler.html");
-  capturedStream = await navigator.mediaDevices.getDisplayMedia({
+  window.open(handlerUrl);
+
+  await new Promise((resolve, reject) => {
+    setTimeout(resolve, 1000);
+  });
+  const handlerPeerId = await requestHandlerPeerId();
+  console.log(handlerPeerId);
+  const conn = peer.connect(handlerPeerId);
+  conn.on("open", () => {
+    conn.send("connected");
+  });
+  conn.on("data", (data) => {
+    if (data === "connected") {
+      startStream(handlerPeerId);
+    }
+  });
+};
+
+const startStream = async (handlerPeerId) => {
+  screenStream = await navigator.mediaDevices.getDisplayMedia({
     video: true,
     audio: false,
   });
-  sendStreamToHandler(capturedStream, url);
-};
-
-const sendStreamToHandler = (capturedStream, url) => {
-  if (capturedStream == null) {
+  if (screenStream == null) {
     console.error("Error starting tab capture");
     return;
   }
-  if (handlerTab != null) {
-    handlerTab.close();
-  }
-  handlerTab = window.open(url);
-  // handlerTab.currentStream = capturedStream;
+  const call = peer.call(handlerPeerId, screenStream);
+  console.log("called handler");
 };
 
 const stopStream = () => {
-  capturedStream = null;
+  if (screenStream !== null) {
+    screenStream.getTracks().forEach((track) => track.stop());
+    screenStream = null;
+  }
   handlerTab.close();
   handlerTab = null;
 };
+
+const requestHandlerPeerId = () => {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      { key: "triggerRequestHandlerPeerId" },
+      (response) => {
+        if (response) {
+          resolve(response.key);
+        } else {
+          reject();
+        }
+      }
+    );
+  });
+};
+
+///////////////////////////
+// window event listners //
+///////////////////////////
+
+window.addEventListener("beforeunload", () => {
+  chrome.storage.local.set({ currentStatus: "false" });
+});
+
+///////////////////////////
+// chrome event listners //
+///////////////////////////
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
@@ -63,7 +94,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     case "on":
       sendResponse({ active: true });
       console.log("toggle-on");
-      startStream();
+      initConnection();
       break;
     case "off":
       sendResponse({ active: false });
