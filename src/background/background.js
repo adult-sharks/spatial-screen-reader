@@ -1,3 +1,7 @@
+////////////////
+// core logic //
+////////////////
+
 const setStatus = (status) => {
   if (status === true) {
     chrome.storage.local.set({ currentStatus: "true" });
@@ -75,6 +79,10 @@ const requestHandlerPeerId = () => {
   });
 };
 
+///////////////////////////
+// chrome event listners //
+///////////////////////////
+
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
     case "query":
@@ -101,7 +109,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         } else if (status === false) {
           try {
             await checkInjection(targetTabId);
-          } catch {
+          } catch (err) {
             await chrome.scripting.executeScript({
               target: { tabId: targetTabId },
               files: ["./src/lib/peerjs.min.js", "./src/inject/inject.js"],

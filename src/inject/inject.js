@@ -1,39 +1,31 @@
-// const getSize = () => {
-//   const h = window.innerHeight;
-//   const w = window.innerWidth;
-//   return { h, w };
-// };
+/////////////////////
+// local variables //
+/////////////////////
 
-let capturedStream = null;
+let screenStream = null;
 let handlerTab = null;
 const peer = new Peer({ debug: 2 });
 peer.on("error", (err) => {
   console.log(err);
 });
 
-const initConnection = async () => {
-  const url = chrome.runtime.getURL("./src/handler/handler.html");
-  // capturedStream = await navigator.mediaDevices.getDisplayMedia({
-  //   video: true,
-  //   audio: false,
-  // });
+////////////////
+// core logic //
+////////////////
 
-  // if (capturedStream == null) {
-  //   console.error("Error starting tab capture");
-  //   return;
-  // }
+const initConnection = async () => {
+  const handlerUrl = chrome.runtime.getURL("./src/handler/handler.html");
   if (handlerTab !== null) {
     handlerTab.close();
   }
 
-  handlerTab = window.open(url);
+  window.open(handlerUrl);
 
   await new Promise((resolve, reject) => {
     setTimeout(resolve, 1000);
   });
   const handlerPeerId = await requestHandlerPeerId();
   console.log(handlerPeerId);
-  // const call = peer.call(handlerPeerId, capturedStream);
   const conn = peer.connect(handlerPeerId);
   conn.on("open", () => {
     conn.send("connected");
@@ -46,22 +38,22 @@ const initConnection = async () => {
 };
 
 const startStream = async (handlerPeerId) => {
-  capturedStream = await navigator.mediaDevices.getDisplayMedia({
+  screenStream = await navigator.mediaDevices.getDisplayMedia({
     video: true,
     audio: false,
   });
-  if (capturedStream == null) {
+  if (screenStream == null) {
     console.error("Error starting tab capture");
     return;
   }
-  const call = peer.call(handlerPeerId, capturedStream);
+  const call = peer.call(handlerPeerId, screenStream);
   console.log("called handler");
 };
 
 const stopStream = () => {
-  if (capturedStream !== null) {
-    capturedStream.getTracks().forEach((track) => track.stop());
-    capturedStream = null;
+  if (screenStream !== null) {
+    screenStream.getTracks().forEach((track) => track.stop());
+    screenStream = null;
   }
   handlerTab.close();
   handlerTab = null;
@@ -81,6 +73,18 @@ const requestHandlerPeerId = () => {
     );
   });
 };
+
+///////////////////////////
+// window event listners //
+///////////////////////////
+
+window.addEventListener("beforeunload", () => {
+  chrome.storage.local.set({ currentStatus: "false" });
+});
+
+///////////////////////////
+// chrome event listners //
+///////////////////////////
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
