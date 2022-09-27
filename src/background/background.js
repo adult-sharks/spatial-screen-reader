@@ -70,6 +70,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       break;
     case "toggle":
       getStatus().then(async (status) => {
+        console.log("status", status);
         status = !status;
         setStatus(status);
         const targetTabId = await getActiveTabId();
