@@ -164,9 +164,12 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
     // [이슈] handler 통신 부분서 오류
     case "handlerReady":
+      console.log("message received");
+      chrome.tabs.highlight({ tabs: [1] }, () => {});
       // getActiveTabId()
       //   .then((tabId) => {
-      //     // chrome.tabs.update(tabId, { active: true }, () => {});
+      //     chrome.tabs.update(tabId, { active: true }, () => {});
+      //     console.log("changed active tab to : " + tabId);
       //   })
       //   .catch((err) => {
       //     console.log(err);

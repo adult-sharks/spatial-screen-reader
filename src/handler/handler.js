@@ -13,10 +13,8 @@ const getStreamId = async () => {
   return new Promise((resolve, reject) => {
     chrome.desktopCapture.chooseDesktopMedia(["window"], (id) => {
       if (id) {
-        console.log("got stream id");
         resolve(id);
       } else {
-        console.log("did not get stream stream id");
         abortCycle();
       }
     });
@@ -32,7 +30,6 @@ const setActivityStatus = (status) => {
 };
 
 const startCapture = async () => {
-  console.log("startCapture init");
   const streamId = await getStreamId();
   screenStream = await navigator.mediaDevices.getUserMedia({
     audio: false,
@@ -46,8 +43,11 @@ const startCapture = async () => {
   player.srcObject = screenStream;
   player.play();
 
-  // [이슈] handler 통신 부분서 오류
-  await chrome.runtime.sendMessage({ key: "handlerReady" });
+  try {
+    chrome.runtime.sendMessage({ key: "handlerReady" });
+  } catch (err) {
+    abortCycle();
+  }
 };
 
 const stopCapture = async () => {
@@ -95,7 +95,6 @@ window.addEventListener("load", function () {
 });
 
 window.addEventListener("beforeunload", () => {
-  console.log("unloading");
   abortCycle();
 });
 
