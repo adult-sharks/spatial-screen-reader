@@ -21,7 +21,6 @@ const sendQuery = () => {
         console.log("is on");
         statusMessage.innerText = "active";
         toggleMessage.innerText = "off";
-        // startStream();
         resolve();
       } else if (response.active === false) {
         console.log("is off");
