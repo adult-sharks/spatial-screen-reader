@@ -3,42 +3,99 @@
 /////////////////////
 
 const player = document.getElementById("player");
-const handlerPeer = new Peer({ debug: 2 });
 let screenStream;
 
-handlerPeer.on("connection", function (conn) {
-  conn.on("open", () => {
-    conn.send("connected");
-  });
-  conn.on("data", (data) => {
-    if (data === "connected") {
-      getStream();
-    }
-  });
-});
+////////////////
+// core logic //
+////////////////
 
-handlerPeer.on("call", (call) => {
-  call.answer();
-  call.on("stream", (remoteStream) => {
-    screenStream = remoteStream;
-    player.srcObject = remoteStream;
+const getStreamId = async () => {
+  return new Promise((resolve, reject) => {
+    chrome.desktopCapture.chooseDesktopMedia(["window"], (id) => {
+      if (id) {
+        resolve(id);
+      } else {
+        abortCycle();
+      }
+    });
   });
-});
+};
+
+const setActivityStatus = (status) => {
+  if (status === true) {
+    chrome.storage.local.set({ activityStatus: "true" });
+  } else if (status === false) {
+    chrome.storage.local.set({ activityStatus: "false" });
+  }
+};
+
+const startCapture = async () => {
+  const streamId = await getStreamId();
+  screenStream = await navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: {
+      mandatory: {
+        chromeMediaSource: "desktop",
+        chromeMediaSourceId: streamId,
+      },
+    },
+  });
+  player.srcObject = screenStream;
+  player.play();
+
+  try {
+    chrome.runtime.sendMessage({ key: "handlerReady" });
+  } catch (err) {
+    abortCycle();
+  }
+};
+
+const stopCapture = async () => {
+  if (screenStream !== null) {
+    screenStream.getTracks().forEach((track) => track.stop());
+    screenStream = null;
+    player.srcObject = null;
+    player.pause();
+  }
+};
+
+const setActivityBadge = (status) => {
+  if (status === "on") {
+    chrome.action.setBadgeBackgroundColor({ color: "#e34646" });
+    chrome.action.setBadgeText({ text: "on" });
+  } else if (status === "off") {
+    chrome.action.setBadgeBackgroundColor({ color: "#e6e6e6" });
+    chrome.action.setBadgeText({ text: "off" });
+  }
+};
+
+const closeWindow = () => {
+  window.close();
+};
+
+const launchCycle = async () => {
+  setActivityStatus(true);
+  setActivityBadge("on");
+  startCapture();
+};
+
+const abortCycle = async () => {
+  setActivityStatus(false);
+  setActivityBadge("off");
+  stopCapture();
+  closeWindow();
+};
 
 ///////////////////////////
 // window event listners //
 ///////////////////////////
 
 window.addEventListener("load", function () {
-  player.addEventListener("canplay", function () {
-    this.muted = true;
-    this.play();
-  });
-  player.srcObject = screenStream;
+  launchCycle();
 });
 
 window.addEventListener("beforeunload", () => {
-  chrome.storage.local.set({ currentStatus: "false" });
+  abortCycle();
 });
 
 ///////////////////////////
@@ -47,8 +104,8 @@ window.addEventListener("beforeunload", () => {
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
-    case "requestHandlerPeerId":
-      sendResponse({ id: handlerPeer._id });
+    case "abort":
+      abortCycle();
       break;
     default:
       break;
