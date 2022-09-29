@@ -8,7 +8,6 @@
 
 const startCycle = () => {};
 const stopCycle = () => {};
-console.log("injected");
 
 ///////////////////////////
 // window event listners //

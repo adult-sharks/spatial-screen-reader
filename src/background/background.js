@@ -81,16 +81,15 @@ const setActiveTabId = (tabId) => {
   chrome.storage.local.set({ activeTabId: tabId });
 };
 
-const checkInjection = (id) => {
-  return new Promise((resolve, reject) => {
-    chrome.tabs.sendMessage(id, { key: "check" }, function (response) {
-      if (!response) {
-        reject();
-      } else if (response.received === true) {
-        resolve();
-      }
-    });
-  });
+const checkInjection = async (tabId) => {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, { key: "check" });
+    if (response.received === true) {
+      return true;
+    }
+  } catch (err) {
+    return false;
+  }
 };
 
 const toggleInjection = async (id, command) => {
@@ -120,14 +119,10 @@ const closeHandlerTab = async () => {
 };
 
 const injectScript = async (targetTabId) => {
-  try {
-    await checkInjection(targetTabId);
-  } catch (err) {
-    await chrome.scripting.executeScript({
-      target: { tabId: targetTabId },
-      files: ["./src/inject/inject.js"],
-    });
-  }
+  await chrome.scripting.executeScript({
+    target: { tabId: targetTabId },
+    files: ["./src/inject/inject.js"],
+  });
 };
 
 const launchCycle = async () => {
@@ -135,7 +130,8 @@ const launchCycle = async () => {
   setActiveTabId(targetTabId);
 
   await openHandlerTab();
-  await injectScript(targetTabId);
+  if ((await checkInjection(targetTabId)) === false)
+    await injectScript(targetTabId);
   await toggleInjection(targetTabId, "on");
 
   console.log("sharks🦈-on");
