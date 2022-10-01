@@ -62,23 +62,17 @@ const queryActiveTabId = async () => {
   });
 };
 
-const getActiveTabId = () => {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.get(["activeTabId"], ({ tabId }) => {
-      if (tabId === undefined) {
-        resolve(queryActiveTabId());
-      } else if (tabId) {
-        tabId = JSON.parse(tabId);
-        resolve(tabId);
-      } else {
-        reject();
-      }
-    });
-  });
+const getActiveTabId = async () => {
+  const { activeTabId } = await chrome.storage.local.get(["activeTabId"]);
+  if (activeTabId === undefined) {
+    return await queryActiveTabId();
+  } else if (activeTabId) {
+    return JSON.parse(activeTabId);
+  }
 };
 
-const setActiveTabId = (tabId) => {
-  chrome.storage.local.set({ activeTabId: tabId });
+const setActiveTabId = async (tabId) => {
+  await chrome.storage.local.set({ activeTabId: tabId });
 };
 
 const checkInjection = async (tabId) => {
@@ -127,7 +121,7 @@ const injectScript = async (targetTabId) => {
 
 const launchCycle = async () => {
   const targetTabId = await queryActiveTabId();
-  setActiveTabId(targetTabId);
+  await setActiveTabId(targetTabId);
 
   await openHandlerTab();
   if ((await checkInjection(targetTabId)) === false)
@@ -162,18 +156,14 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
-    // [이슈] handler 통신 부분서 오류
     case "handlerReady":
-      console.log("message received");
-      chrome.tabs.highlight({ tabs: [1] }, () => {});
-      // getActiveTabId()
-      //   .then((tabId) => {
-      //     chrome.tabs.update(tabId, { active: true }, () => {});
-      //     console.log("changed active tab to : " + tabId);
-      //   })
-      //   .catch((err) => {
-      //     console.log(err);
-      //   });
+      getActiveTabId()
+        .then((tabId) => {
+          chrome.tabs.update(tabId, { active: true }, () => {});
+        })
+        .catch((err) => {
+          console.log(err);
+        });
       break;
     default:
       break;
