@@ -16,17 +16,22 @@ const getStreamId = async () => {
         resolve(id);
       } else {
         abortCycle();
+        reject();
       }
     });
   });
 };
 
-const setActivityStatus = (status) => {
+const setActivityStatus = async (status) => {
   if (status === true) {
-    chrome.storage.local.set({ activityStatus: "true" });
+    await chrome.storage.local.set({ activityStatus: "true" });
   } else if (status === false) {
-    chrome.storage.local.set({ activityStatus: "false" });
+    await chrome.storage.local.set({ activityStatus: "false" });
   }
+};
+
+const sendReadyMessage = async () => {
+  chrome.runtime.sendMessage({ key: "handlerReady" });
 };
 
 const startCapture = async () => {
@@ -41,13 +46,6 @@ const startCapture = async () => {
     },
   });
   player.srcObject = screenStream;
-  player.play();
-
-  try {
-    chrome.runtime.sendMessage({ key: "handlerReady" });
-  } catch (err) {
-    abortCycle();
-  }
 };
 
 const stopCapture = async () => {
@@ -74,15 +72,16 @@ const closeWindow = () => {
 };
 
 const launchCycle = async () => {
-  setActivityStatus(true);
+  await setActivityStatus(true);
   setActivityBadge("on");
-  startCapture();
+  await startCapture();
+  await sendReadyMessage();
 };
 
 const abortCycle = async () => {
-  setActivityStatus(false);
+  await setActivityStatus(false);
   setActivityBadge("off");
-  stopCapture();
+  await stopCapture();
   closeWindow();
 };
 
@@ -110,5 +109,4 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     default:
       break;
   }
-  return true;
 });

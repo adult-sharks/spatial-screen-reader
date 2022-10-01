@@ -2,20 +2,11 @@
 // core logic //
 ////////////////
 
-const getActivityStatus = () => {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.get(["activityStatus"], ({ activityStatus }) => {
-      if (activityStatus === undefined) {
-        activityStatus = false;
-        resolve(activityStatus);
-      } else if (activityStatus) {
-        activityStatus = JSON.parse(activityStatus);
-        resolve(activityStatus);
-      } else {
-        reject();
-      }
-    });
-  });
+const getActivityStatus = async () => {
+  const { activityStatus } = await chrome.storage.local.get(["activityStatus"]);
+  if (activityStatus === undefined) return false;
+  else if (activityStatus) return JSON.parse(activityStatus);
+  else return new Error("Cannot get activity status");
 };
 
 const setActivityStatus = async (status) => {
@@ -26,59 +17,23 @@ const setActivityStatus = async (status) => {
   }
 };
 
-const setHandlerStatus = async (status) => {
-  if (status === true) {
-    await chrome.storage.local.set({ handlerReady: "true" });
-  } else if (status === false) {
-    await chrome.storage.local.set({ handlerReady: "false" });
+const queryActiveTabId = async () => {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tabs.length > 0) return tabs[0].id;
+  else return new Error("Cannot parse active tab");
+};
+
+const getActiveTabId = async () => {
+  const { activeTabId } = await chrome.storage.local.get(["activeTabId"]);
+  if (activeTabId === undefined) {
+    return await queryActiveTabId();
+  } else if (activeTabId) {
+    return JSON.parse(activeTabId);
   }
 };
 
-const getHandlerStatus = () => {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.get(["activityStatus"], ({ activityStatus }) => {
-      if (activityStatus === undefined) {
-        activityStatus = false;
-        resolve(activityStatus);
-      } else if (activityStatus) {
-        activityStatus = JSON.parse(activityStatus);
-        resolve(activityStatus);
-      } else {
-        reject();
-      }
-    });
-  });
-};
-
-const queryActiveTabId = async () => {
-  return new Promise((resolve, reject) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      if (tabs.length > 0) {
-        resolve(tabs[0].id);
-      } else {
-        reject();
-      }
-    });
-  });
-};
-
-const getActiveTabId = () => {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.get(["activeTabId"], ({ tabId }) => {
-      if (tabId === undefined) {
-        resolve(queryActiveTabId());
-      } else if (tabId) {
-        tabId = JSON.parse(tabId);
-        resolve(tabId);
-      } else {
-        reject();
-      }
-    });
-  });
-};
-
-const setActiveTabId = (tabId) => {
-  chrome.storage.local.set({ activeTabId: tabId });
+const setActiveTabId = async (tabId) => {
+  await chrome.storage.local.set({ activeTabId: tabId });
 };
 
 const checkInjection = async (tabId) => {
@@ -96,7 +51,7 @@ const toggleInjection = async (id, command) => {
   try {
     await chrome.tabs.sendMessage(id, { key: command });
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
 };
 
@@ -115,6 +70,7 @@ const closeHandlerTab = async () => {
     await chrome.runtime.sendMessage({ key: "abort" });
   } catch (err) {
     await setActivityStatus(false);
+    console.error(err);
   }
 };
 
@@ -127,7 +83,7 @@ const injectScript = async (targetTabId) => {
 
 const launchCycle = async () => {
   const targetTabId = await queryActiveTabId();
-  setActiveTabId(targetTabId);
+  await setActiveTabId(targetTabId);
 
   await openHandlerTab();
   if ((await checkInjection(targetTabId)) === false)
@@ -162,18 +118,14 @@ chrome.runtime.onStartup.addListener(() => {
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
-    // [이슈] handler 통신 부분서 오류
     case "handlerReady":
-      console.log("message received");
-      chrome.tabs.highlight({ tabs: [1] }, () => {});
-      // getActiveTabId()
-      //   .then((tabId) => {
-      //     chrome.tabs.update(tabId, { active: true }, () => {});
-      //     console.log("changed active tab to : " + tabId);
-      //   })
-      //   .catch((err) => {
-      //     console.log(err);
-      //   });
+      getActiveTabId()
+        .then((tabId) => {
+          chrome.tabs.update(tabId, { active: true }, () => {});
+        })
+        .catch((err) => {
+          console.error(err);
+        });
       break;
     default:
       break;
