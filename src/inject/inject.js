@@ -6,7 +6,7 @@
 // core logic //
 ////////////////
 
-const startCycle = () => {};
+const launchCycle = () => {};
 const stopCycle = () => {};
 
 ///////////////////////////
