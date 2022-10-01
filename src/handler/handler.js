@@ -16,6 +16,7 @@ const getStreamId = async () => {
         resolve(id);
       } else {
         abortCycle();
+        reject();
       }
     });
   });
@@ -41,7 +42,6 @@ const startCapture = async () => {
     },
   });
   player.srcObject = screenStream;
-  player.play();
 
   try {
     chrome.runtime.sendMessage({ key: "handlerReady" });
@@ -110,5 +110,4 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     default:
       break;
   }
-  return true;
 });
