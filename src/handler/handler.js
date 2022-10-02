@@ -1,11 +1,121 @@
+/////////////////////
+// local variables //
+/////////////////////
+var screenInterval;
 var h;
 var w;
 var timer;
-var screenInterval;
 
-const xc = document.getElementById("xc");
-const yc = document.getElementById("yc");
-const vol = document.getElementById("vol");
+const xc = document.getElementById('xc');
+const yc = document.getElementById('yc');
+const vol = document.getElementById('vol');
+
+const streamCanvas = document.getElementById("streamCanvas");
+const edgeDetectionCanvas = document.getElementById("edgeDetectionCanvas");
+
+const initialFreq = 50;
+const initialVol = 1;
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+const oscillator = audioCtx.createOscillator();
+const gainNode = audioCtx.createGain();
+
+const player = document.getElementById("player");
+let screenStream;
+
+////////////////
+// core logic //
+////////////////
+
+const getStreamId = async () => {
+  return new Promise((resolve, reject) => {
+    chrome.desktopCapture.chooseDesktopMedia(["window"], (id) => {
+      if (id) {
+        resolve(id);
+      } else {
+        abortCycle();
+        reject();
+      }
+    });
+  });
+};
+
+const setActivityStatus = async (status) => {
+  if (status === true) {
+    await chrome.storage.local.set({ activityStatus: "true" });
+  } else if (status === false) {
+    await chrome.storage.local.set({ activityStatus: "false" });
+  }
+};
+
+const sendReadyMessage = async () => {
+  chrome.runtime.sendMessage({ key: "handlerReady" });
+};
+
+const startCapture = async () => {
+  const streamId = await getStreamId();
+  screenStream = await navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: {
+      mandatory: {
+        chromeMediaSource: "desktop",
+        chromeMediaSourceId: streamId,
+      },
+    },
+  });
+  player.srcObject = screenStream;
+};
+
+const stopCapture = async () => {
+  if (screenStream !== null) {
+    screenStream.getTracks().forEach((track) => track.stop());
+    screenStream = null;
+    player.srcObject = null;
+    player.pause();
+  }
+};
+
+const setActivityBadge = (status) => {
+  if (status === "on") {
+    chrome.action.setBadgeBackgroundColor({ color: "#e34646" });
+    chrome.action.setBadgeText({ text: "on" });
+  } else if (status === "off") {
+    chrome.action.setBadgeBackgroundColor({ color: "#e6e6e6" });
+    chrome.action.setBadgeText({ text: "off" });
+  }
+};
+
+const closeWindow = () => {
+  window.close();
+};
+
+const launchCycle = async () => {
+  await setActivityStatus(true);
+  setActivityBadge("on");
+  await startCapture();
+  await sendReadyMessage();
+};
+
+const abortCycle = async () => {
+  await setActivityStatus(false);
+  setActivityBadge("off");
+  await stopCapture();
+  closeWindow();
+};
+
+const setAudio = () => {
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  
+  oscillator.detune.value = 0; 
+  oscillator.start(0);
+  
+  gainNode.gain.value = initialVol;
+  oscillator.frequency.value = initialFreq;
+  gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+};
 
 const readLocalStorage = async (key) => {
   return new Promise((resolve, reject) => {
@@ -19,138 +129,100 @@ const readLocalStorage = async (key) => {
   });
 };
 
-const edgeDetection = (player, streamCanvas) => {
-  player.style.display = "none";
-  streamCanvas.style.display = "none";
-
+const edgeDetection = () => {
   screenInterval = setInterval(() => {
-    var canvasContext = streamCanvas.getContext("2d");
+    var ctx = streamCanvas.getContext("2d");
+    
+    ctx.drawImage(
+      player, 
+      (streamCanvas.width - player.videoWidth) / 2, 
+      (streamCanvas.height - player.videoHeight) / 2
+      );
+    
     var src = cv.imread("streamCanvas");
     let ksize = new cv.Size(10, 10);
     let anchor = new cv.Point(-1, -1);
-
-    canvasContext.drawImage(
-      player,
-      (streamCanvas.width - player.videoWidth) / 2,
-      (streamCanvas.height - player.videoHeight) / 2
-    );
 
     cv.cvtColor(src, src, cv.COLOR_RGB2GRAY, 0);
     cv.Canny(src, src, 30, 100, 5, false);
     cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
     cv.imshow("edgeDetectionCanvas", src);
+
     src.delete();
   }, 100);
+
+  player.style.display = "none";
+  streamCanvas.style.display = "none";
 };
 
-const canvasModule = async (player) => {
-  var streamCanvas = document.getElementById("streamCanvas");
-  var edgeDetectionCanvas = document.getElementById("edgeDetectionCanvas");
+const canvasModule = async () => {
+  h = 700 // await readLocalStorage('windowHeight');
+  w = 1400 // await readLocalStorage('windowWidth');
 
-  h = await readLocalStorage("windowHeight");
-  w = await readLocalStorage("windowWidth");
+  streamCanvas.setAttribute('height', h);
+  streamCanvas.setAttribute('width', w);
+  edgeDetectionCanvas.setAttribute('height', h);
+  edgeDetectionCanvas.setAttribute('width', w);
 
-  streamCanvas.setAttribute("height", h);
-  streamCanvas.setAttribute("width", w);
-  edgeDetectionCanvas.setAttribute("height", h);
-  edgeDetectionCanvas.setAttribute("width", w);
-
-  edgeDetection(player, streamCanvas);
+  edgeDetection();
 };
 
-// ==== AUDIO MODULE ==== //
-const initialFreq = 50;
-const initialVol = 1;
-
-// create web audio api context
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioCtx = new AudioContext();
-
-// create Oscillator and gain node
-const oscillator = audioCtx.createOscillator();
-const gainNode = audioCtx.createGain();
-
-// connect oscillator to gain node to speakers
-oscillator.connect(gainNode);
-gainNode.connect(audioCtx.destination);
-
-oscillator.detune.value = 0; // value in cents
-oscillator.start(0);
-
-// Set default parameters related to audio
-gainNode.gain.value = initialVol;
-oscillator.frequency.value = initialFreq;
-gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
-
-const setVolume = (param, my) => {
-  //set freq corresponding to y cordinate
+const setVolume = (brightness, my) => {
   oscillator.frequency.value = initialFreq + 50 * (my / h);
-  //listen to brightness level as param at cursor position (MAX 255, MIN 0)
-  gainNode.gain.exponentialRampToValueAtTime(
-    param / 100,
-    audioCtx.currentTime + 0.1
-  );
+  gainNode.gain.exponentialRampToValueAtTime(brightness / 100, audioCtx.currentTime + 0.1);
 };
 
 const getCoordinateData = () => {
-  chrome.storage.local.get(["mouseX", "mouseY"], function (result) {
-    var mx = result.mouseX;
-    var my = result.mouseY;
-    var output = document.getElementById("edgeDetectionCanvas");
+  chrome.storage.local.get(["mouseX", "mouseY"], (result) => {
+    var mx = 50; // result.mouseX
+    var my = 50; // result.mouseY
 
-    let c = output.getContext("2d");
+    let c = edgeDetectionCanvas.getContext('2d');
     let p = c.getImageData(mx, my, 1, 1).data;
     let brightness = p[0] ? p[0] : 1;
 
+    vol.innerText = brightness.toString();
     xc.innerText = mx.toString();
     yc.innerText = my.toString();
-    vol.innerText = brightness.toString();
-
-    setVolume(brightness, my);
 
     clearTimeout(timer);
     timer = setTimeout(() => {
       setVolume(1, my);
     }, 1000);
+
+    setVolume(brightness, my);
   });
 };
 
-window.addEventListener("load", async (e) => {
-  var player = document.getElementById("player");
-
-  player.srcObject = window.currentStream;
-  player.addEventListener("canplay", async (e) => {
-    e.muted = true;
-    e.play();
-  });
-
-  await canvasModule(player);
+const setPlayer = async () => {
+  await canvasModule();
   chrome.storage.onChanged.addListener(getCoordinateData);
+};
+
+///////////////////////////
+// window event listners //
+///////////////////////////
+
+window.addEventListener("load", function () {
+  launchCycle();
+  setAudio();
+  setPlayer();
 });
 
-window.addEventListener("beforeunload", shutdownHandler);
+window.addEventListener("beforeunload", () => {
+  abortCycle();
+});
 
-// ==== SHUTDOWN MODULE ==== //
-const shutdownHandler = () => {
-  // Check whether current stream exists
-  if (!window.currentStream) {
-    return;
+///////////////////////////
+// chrome event listners //
+///////////////////////////
+
+chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+  switch (message.key) {
+    case "abort":
+      abortCycle();
+      break;
+    default:
+      break;
   }
-
-  // Empty the source object and cut off the stream track
-  var player = document.getElementById("player");
-  var tracks = window.currentStream.getTracks();
-
-	player.srcObject = null;
-  window.currentStream = null;
-	for (var i = 0; i < tracks.length; ++i) {
-    tracks[i].stop();
-  }
-
-  // Clear screen interval and remove event listener
-  clearInterval(screenInterval);
-  chrome.storage.onChanged.removeListener(getCoordinateData());
-
-  // Close the window
-  window.close();
-}
+});
