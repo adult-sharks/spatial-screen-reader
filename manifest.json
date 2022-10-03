@@ -35,5 +35,13 @@
       "resources": ["/src/handler/handler.html"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-eval';"
+  },
+  "sandbox": {
+    "pages": [
+      "sandbox.html"
+    ]
+  }
 }
