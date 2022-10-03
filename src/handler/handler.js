@@ -3,6 +3,7 @@
 /////////////////////
 
 const player = document.getElementById("player");
+const sandbox = document.getElementById("sandbox");
 let screenStream;
 
 ////////////////
@@ -71,11 +72,17 @@ const closeWindow = () => {
   window.close();
 };
 
+const connectSandbox = () => {
+  sandbox.contentWindow.remoteStream = screenStream;
+  sandbox.contentWindow.postMessage("initiate", "*");
+};
+
 const launchCycle = async () => {
   await setActivityStatus(true);
   setActivityBadge("on");
   await startCapture();
   await sendReadyMessage();
+  connectSandbox();
 };
 
 const abortCycle = async () => {
