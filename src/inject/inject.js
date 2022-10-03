@@ -7,7 +7,7 @@
 ////////////////
 
 const launchCycle = () => {};
-const stopCycle = () => {};
+const abortCycle = () => {};
 
 ///////////////////////////
 // window event listners //
@@ -27,12 +27,12 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     case "on":
       sendResponse({ active: true });
       console.log("toggle-on");
-      startCycle();
+      launchCycle();
       break;
     case "off":
       sendResponse({ active: false });
       console.log("toggle-off");
-      stopCycle();
+      abortCycle();
       break;
     default:
       break;
