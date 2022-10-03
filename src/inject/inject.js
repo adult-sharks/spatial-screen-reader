@@ -1,5 +1,4 @@
 // ==== TTS COMPONENT ==== //
-
 // Timer component to wait for timeout
 // Korean REGEX to check whether Korean
 // [code from http://yoonbumtae.com/?p=2516]
@@ -95,8 +94,12 @@ const logKey = (e) => {
   // Get client window size
   // Pass it to chrome local storage
 
-  let mx = e.clientX;
-  let my = e.clientY;
+  let mx = e.screenX;
+  let my = e.screenY;
+
+  //console.log("screen", e.screenX, "screebY", e.screenY)
+  //console.log("page", e.pageX, "page", e.pageY)
+  //console.log("clientX", e.clientX, "clientX", e.clientY)
 
   chrome.storage.local.set({ 'mouseX': mx, 'mouseY': my });
   console.log(mx + ', ' + my)
@@ -143,54 +146,26 @@ window.addEventListener('unload', () => {
 
 let capturedStream = null;
 let handlerTab = null;
+/////////////////////
+// local variables //
+/////////////////////
 
-// const startStream = () => {
-//   const { h, w } = getSize();
-//   const handlerTab = null;
+////////////////
+// core logic //
+////////////////
 
-//   chrome.tabCapture.capture(
-//     {
-//       audio: false,
-//       video: true,
-//       videoConstraints: {},
-//     },
-//     (mediaStream) => {
-//       sendStreamToHandler(mediaStream, handlerTab);
-//     }
-//   );
-//   handlerTab = window.open("./src/handler/handler.html");
-//   chrome.tabs.create({
-//     url: chrome.extension.getURL("./src/handler/handler.html"),
-//     selected: true,
-//   });
-// };
+const launchCycle = () => { };
+const stopCycle = () => { };
 
-const startStream = async () => {
-  const url = chrome.runtime.getURL("./src/handler/handler.html");
-  capturedStream = await navigator.mediaDevices.getDisplayMedia({
-    video: true,
-    audio: false,
-  });
-  sendStreamToHandler(capturedStream, url);
-};
+///////////////////////////
+// window event listners //
+///////////////////////////
 
-const sendStreamToHandler = (capturedStream, url) => {
-  if (capturedStream == null) {
-    console.error("Error starting tab capture");
-    return;
-  }
-  if (handlerTab != null) {
-    handlerTab.close();
-  }
-  handlerTab = window.open(url);
-  // handlerTab.currentStream = capturedStream;
-};
+window.addEventListener("beforeunload", () => { });
 
-const stopStream = () => {
-  capturedStream = null;
-  handlerTab.close();
-  handlerTab = null;
-};
+///////////////////////////
+// chrome event listners //
+///////////////////////////
 
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
@@ -200,12 +175,12 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     case "on":
       sendResponse({ active: true });
       console.log("toggle-on");
-      startStream();
+      startCycle();
       break;
     case "off":
       sendResponse({ active: false });
       console.log("toggle-off");
-      stopStream();
+      stopCycle();
       break;
     default:
       break;

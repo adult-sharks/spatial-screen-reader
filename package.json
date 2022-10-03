@@ -1,6 +1,6 @@
 {
   "name": "sonar-mv3-proto",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "web plugin based on openCV for visually impaired people",
   "main": "index.js",
   "scripts": {

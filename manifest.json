@@ -2,16 +2,16 @@
   "manifest_version": 3,
   "name": "sonar-mv3-proto",
   "description": "A chromium plugin based on openCV for visually impaired people",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "options_page": "./src/option/option.html",
   "background": { "service_worker": "./src/background/background.js" },
   "action": {
-    "default_popup": "./src/popup/popup.html",
     "default_icon": {
       "16": "./asset/icon/icon-16.png",
       "32": "./asset/icon/icon-32.png",
       "48": "./asset/icon/icon-48.png"
-    }
+    },
+    "default_title": "Sonar"
   },
   "icons":{
     "16": "./asset/icon/icon-16.png",
@@ -20,13 +20,12 @@
     "64": "./asset/icon/icon-64.png",
     "128": "./asset/icon/icon-128.png"
   },
-
   "permissions": [
     "tabs",
     "storage",
     "alarms",
     "scripting",
-    "tabCapture"
+    "desktopCapture" 
   ],
   "host_permissions": [
     "<all_urls>"
@@ -36,5 +35,13 @@
       "resources": ["/src/handler/handler.html"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-eval';"
+  },
+  "sandbox": {
+    "pages": [
+      "sandbox.html"
+    ]
+  }
 }
