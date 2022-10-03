@@ -1,5 +1,9 @@
-const player = document.getElementById("player");
+const imageContainer = document.getElementById("output");
+let streamImage;
 
 window.addEventListener("message", (event) => {
-  player.srcObject = window.remoteStream;
+  streamImage = event.data;
+  if (streamImage) {
+    imageContainer.src = streamImage;
+  }
 });

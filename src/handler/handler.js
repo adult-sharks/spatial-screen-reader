@@ -4,7 +4,10 @@
 
 const player = document.getElementById("player");
 const sandbox = document.getElementById("sandbox");
+const streamCanvas = document.createElement("canvas");
+let screenContext;
 let screenStream;
+let screenInterval;
 
 ////////////////
 // core logic //
@@ -72,9 +75,20 @@ const closeWindow = () => {
   window.close();
 };
 
-const connectSandbox = () => {
-  sandbox.contentWindow.remoteStream = screenStream;
-  sandbox.contentWindow.postMessage("initiate", "*");
+const setSandboxStreamInterval = () => {
+  streamCanvas.height = screenStream.getVideoTracks()[0].getSettings().height;
+  streamCanvas.width = screenStream.getVideoTracks()[0].getSettings().width;
+
+  screenInterval = setInterval(() => {
+    screenContext = streamCanvas.getContext("2d");
+    screenContext.drawImage(player, 0, 0);
+    const base64 = streamCanvas.toDataURL();
+    sandbox.contentWindow.postMessage(base64, "*");
+  }, 10);
+};
+
+const clearSandboxStreamInterval = () => {
+  clearInterval(screenInterval);
 };
 
 const launchCycle = async () => {
@@ -82,12 +96,13 @@ const launchCycle = async () => {
   setActivityBadge("on");
   await startCapture();
   await sendReadyMessage();
-  connectSandbox();
+  setSandboxStreamInterval();
 };
 
 const abortCycle = async () => {
   await setActivityStatus(false);
   setActivityBadge("off");
+  clearSandboxStreamInterval();
   await stopCapture();
   closeWindow();
 };
