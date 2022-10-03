@@ -19,7 +19,10 @@ const setActivityStatus = async (status) => {
 
 const queryActiveTabId = async () => {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tabs.length > 0) return tabs[0].id;
+  if (tabs.length > 0) {
+    console.log(tabs)
+    return tabs[0].id;
+  }
   else return new Error("Cannot parse active tab");
 };
 
@@ -101,6 +104,22 @@ const abortCycle = async () => {
   console.log("sharks🦈-off");
 };
 
+const changeTab = async () => {
+  try {
+    const targetTabId = await queryActiveTabId();
+    console.log(targetTabId)
+    await setActiveTabId(targetTabId);
+    if ((await checkInjection(targetTabId)) === false)
+      await injectScript(targetTabId);
+  }
+  catch (err) {
+    console.error(err)
+  }
+}
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+  changeTab();
+});
+
 ///////////////////////////
 // chrome event listners //
 ///////////////////////////
@@ -126,11 +145,6 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         .catch((err) => {
           console.error(err);
         });
-      break;
-    case "inject":
-      getActiveTabId().then((tabId) => {
-        injectScript(tabId)
-      })
       break;
     default:
       break;

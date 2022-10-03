@@ -133,13 +133,11 @@ mouseEventListener();
 
 
 // ==== COMMUNICATION COMPONENT ==== //
-
+///////////////////////////
+// window event listners //
+///////////////////////////
 //When unloaded(page redirected), 
 //send message, so that foreground.js is injected again
-window.addEventListener('unload', () => {
-  chrome.runtime.sendMessage({ key: 'inject' })
-});
-
 
 
 
@@ -157,11 +155,7 @@ let handlerTab = null;
 const launchCycle = () => { };
 const stopCycle = () => { };
 
-///////////////////////////
-// window event listners //
-///////////////////////////
 
-window.addEventListener("beforeunload", () => { });
 
 ///////////////////////////
 // chrome event listners //
