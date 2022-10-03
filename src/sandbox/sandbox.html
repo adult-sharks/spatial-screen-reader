@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sandbox</title>
+</head>
+<body>
+  <div id="coordinate">
+    <p>x-cord: <span id="xc">0</span></p>
+    <p>y-cord: <span id="yc">0</span></p>
+    <p>volume: <span id="vol">0</span></p>
+  </div>
+  <div id="logo">
+    <img src="handlerLogo.png" alt="logo">
+  </div>
+  <video id="player" autoplay muted></video>
+  <canvas id="streamCanvas"></canvas>
+  <canvas id="edgeDetectionCanvas"></canvas>
+  <script src="opencv.js"></script>
+  <script src="sandbox.js"></script>
+</body>
+</html>
