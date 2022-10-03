@@ -82,7 +82,7 @@ const resetCursor = () => {
 }
 
 var timer;
-const logKey = (e) => {
+const logKey = async (e) => {
 
   // Set timer 1000ms
   // When 'logKey()' is not overwritten, elementToSpeech is called after 1s
@@ -113,14 +113,21 @@ const logKey = (e) => {
   //  Check whether toggle is off
   //  When off, remove EventListener and timer(elementToSpeech())
 
-  chrome.runtime.sendMessage({ key: 'query' }, (response) => {
-    if (response.active == false) {
-      console.log("mouse off");
-      document.removeEventListener('mousemove', logKey);
-      clearTimeout(timer);
-      resetCursor();
-    }
-  })
+  /* chrome.runtime.sendMessage({ key: 'query' }, (response) => {
+     if (response.active == false) {
+       console.log("mouse off");
+       document.removeEventListener('mousemove', logKey);
+       clearTimeout(timer);
+       resetCursor();
+     }
+   })*/
+  const { activityStatus } = await chrome.storage.local.get(["activityStatus"]);
+  if (activityStatus == "false") {
+    console.log("mouse off");
+    document.removeEventListener('mousemove', logKey);
+    clearTimeout(timer);
+    resetCursor();
+  }
 }
 
 const mouseEventListener = () => {
