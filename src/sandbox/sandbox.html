@@ -7,18 +7,10 @@
   <title>Sandbox</title>
 </head>
 <body>
-  <div id="coordinate">
-    <p>x-cord: <span id="xc">0</span></p>
-    <p>y-cord: <span id="yc">0</span></p>
-    <p>volume: <span id="vol">0</span></p>
-  </div>
-  <div id="logo">
-    <img src="handlerLogo.png" alt="logo">
-  </div>
-  <video id="player" autoplay muted></video>
-  <canvas id="streamCanvas"></canvas>
+  <!-- <video id="player" autoplay muted></video> -->
+  <img id="output" width="1000px" height="600px">
   <canvas id="edgeDetectionCanvas"></canvas>
-  <script src="opencv.js"></script>
+  <script src="../lib/opencv.js" type="text/javascript"></script>
   <script src="sandbox.js"></script>
 </body>
 </html>
