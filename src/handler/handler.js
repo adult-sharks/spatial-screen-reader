@@ -84,7 +84,7 @@ const setSandboxStreamInterval = () => {
     screenContext.drawImage(player, 0, 0);
     const base64 = streamCanvas.toDataURL();
     sandbox.contentWindow.postMessage(base64, "*");
-  }, 10);
+  }, 1);
 };
 
 const clearSandboxStreamInterval = () => {
