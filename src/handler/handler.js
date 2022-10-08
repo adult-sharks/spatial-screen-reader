@@ -91,7 +91,7 @@ const setSandboxStreamInterval = () => {
     mouseX = (mouseX + 23) % 100;
     mouseY = (mouseY + 37) % 100;
     sandbox.contentWindow.postMessage(mouseX + "/" + mouseY, "*");
-  }, 1);
+  }, 10);
 };
 
 const clearSandboxStreamInterval = () => {

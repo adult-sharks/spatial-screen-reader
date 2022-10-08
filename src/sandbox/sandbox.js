@@ -32,16 +32,6 @@ gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
 
 const imageContainer = document.getElementById("output");
 
-const canvasModule = async() => {
-  const output = document.getElementById("edgeDetectionCanvas");
-
-  h = 700; 
-  w = 1000; 
-  
-  output.setAttribute("height", h);
-  output.setAttribute("width", w);
-};
-
 const setVolume = (param, my) => {
   oscillator.frequency.value = initialFreq + 50 * (my / h)
   gainNode.gain.exponentialRampToValueAtTime(param/100, audioCtx.currentTime + 0.1);
@@ -53,7 +43,6 @@ const getCoordinateData = (mouseX, mouseY) => {
   let p = c.getImageData(mouseX, mouseY, 1, 1).data;
   let brightness = p[0] ? p[0] : 1;
 
-  console.log(brightness + ", " + mouseY);
   clearTimeout(timer);
   timer = setTimeout(() => {
     setVolume(1, mouseY)
@@ -91,5 +80,10 @@ window.addEventListener("message", (event) => {
 });
 
 window.addEventListener("load", () => {
-  canvasModule();
+  const output = document.getElementById("edgeDetectionCanvas");
+
+  h = 700; 
+  w = 1000; 
+  output.setAttribute("height", h);
+  output.setAttribute("width", w);
 });
