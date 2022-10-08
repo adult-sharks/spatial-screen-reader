@@ -1,5 +1,11 @@
 var h;
 var w;
+var timer;
+
+var curMouseX;
+var curMouseY;
+var prevMouseX;
+var prevMouseY;
 
 const initialFreq = 50;
 const initialVol = 1;
@@ -29,15 +35,35 @@ const imageContainer = document.getElementById("output");
 const canvasModule = async() => {
   const output = document.getElementById("edgeDetectionCanvas");
 
-  h = 700; // windowHeight
-  w = 1000; // windowWidth
+  h = 700; 
+  w = 1000; 
   
   output.setAttribute("height", h);
   output.setAttribute("width", w);
 };
 
-window.addEventListener("message", (event) => { 
-  if (event.data) {
+const setVolume = (param, my) => {
+  oscillator.frequency.value = initialFreq + 50 * (my / h)
+  gainNode.gain.exponentialRampToValueAtTime(param/100, audioCtx.currentTime + 0.1);
+};
+
+const getCoordinateData = (mouseX, mouseY) => {
+  let output = document.getElementById("edgeDetectionCanvas");
+  let c = output.getContext('2d');
+  let p = c.getImageData(mouseX, mouseY, 1, 1).data;
+  let brightness = p[0] ? p[0] : 1;
+
+  console.log(brightness + ", " + mouseY);
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    setVolume(1, mouseY)
+  }, 1000);
+
+  setVolume(brightness, mouseY);
+};
+
+window.addEventListener("message", (event) => {
+  if (event.data[0] == 'd') {
     imageContainer.src = event.data;
     
     const src = cv.imread(imageContainer);
@@ -50,40 +76,20 @@ window.addEventListener("message", (event) => {
     cv.imshow("edgeDetectionCanvas", src);
     
     src.delete();
-
     imageContainer.style.display = "none";
+  } 
+  else {
+    curMouseX = parseInt(event.data.split('/')[0]);
+    curMouseY = parseInt(event.data.split('/')[1]);
+
+    if (curMouseX != prevMouseX && curMouseY != prevMouseY) {
+      getCoordinateData(curMouseX, curMouseY);
+    } 
+    prevMouseX = curMouseX;
+    prevMouseY = curMouseY;
   }
 });
 
-const setVolume = (param, my) => {
-  oscillator.frequency.value = initialFreq + 50 * (my / h)
-  gainNode.gain.exponentialRampToValueAtTime(param/100, audioCtx.currentTime + 0.1);
-};
-
-const getCoordinateData = () => {
-  var mx, my;
-  let output = document.getElementById("edgeDetectionCanvas");
-
-  chrome.storage.local.get(['mouseX', 'mouseY'], (result) => {
-    mx = result.mouseX;
-    my = result.mouseY;
-
-    let c = output.getContext('2d');
-    let p = c.getImageData(mx, my, 1, 1).data;
-    let brightness = p[0] ? p[0] : 1;
-  
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      setVolume(1, my)
-      console.log(1);
-    }, 1000);
-
-    console.log(brightness);
-    setVolume(brightness, my);
-  });
-};
-
 window.addEventListener("load", () => {
   canvasModule();
-  chrome.storage.onChanged.addListener(getCoordinateData);
 });

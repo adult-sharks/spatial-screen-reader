@@ -9,6 +9,9 @@ let screenContext;
 let screenStream;
 let screenInterval;
 
+var mouseX = 0;
+var mouseY = 0;
+
 ////////////////
 // core logic //
 ////////////////
@@ -84,6 +87,10 @@ const setSandboxStreamInterval = () => {
     screenContext.drawImage(player, 0, 0);
     const base64 = streamCanvas.toDataURL();
     sandbox.contentWindow.postMessage(base64, "*");
+
+    mouseX = (mouseX + 23) % 100;
+    mouseY = (mouseY + 37) % 100;
+    sandbox.contentWindow.postMessage(mouseX + "/" + mouseY, "*");
   }, 1);
 };
 
@@ -107,12 +114,19 @@ const abortCycle = async () => {
   closeWindow();
 };
 
+const getCoordinateData = async() => {
+  const { mouseX, mouseY } = await chrome.storage.local.get(["mouseX", "mouseY"]);
+  // inject.js 에서 제대로 받아오면 추가하기
+  // sandbox.contentWindow.postMessage(mouseX + "," + mouseY, "*");
+};
+
 ///////////////////////////
 // window event listners //
 ///////////////////////////
 
 window.addEventListener("load", function () {
   launchCycle();
+  chrome.storage.onChanged.addListener(getCoordinateData);
 });
 
 window.addEventListener("beforeunload", () => {
