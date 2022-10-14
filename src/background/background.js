@@ -26,6 +26,7 @@ const queryActiveTabId = async () => {
   else return new Error("Cannot parse active tab");
 };
 
+
 const getActiveTabId = async () => {
   const { activeTabId } = await chrome.storage.local.get(["activeTabId"]);
   if (activeTabId === undefined) {
@@ -87,12 +88,10 @@ const injectScript = async (targetTabId) => {
 const launchCycle = async () => {
   const targetTabId = await queryActiveTabId();
   await setActiveTabId(targetTabId);
-
   await openHandlerTab();
   if ((await checkInjection(targetTabId)) === false)
     await injectScript(targetTabId);
   await toggleInjection(targetTabId, "on");
-
   console.log("sharks🦈-on");
 };
 
@@ -100,25 +99,37 @@ const abortCycle = async () => {
   const targetTabId = await getActiveTabId();
   await closeHandlerTab();
   await toggleInjection(targetTabId, "off");
-
   console.log("sharks🦈-off");
 };
 
+/*
 const changeTab = async () => {
   try {
     const targetTabId = await queryActiveTabId();
     console.log(targetTabId)
     await setActiveTabId(targetTabId);
-    if ((await checkInjection(targetTabId)) === false)
+    if (await chrome.storage.local.get(["activityStatus"]) == true)
       await injectScript(targetTabId);
   }
   catch (err) {
     console.error(err)
   }
-}
+}*/
+
+
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-  changeTab();
-});
+  console.log(tabId, changeInfo, tab)
+  /*  if (changeInfo.status == 'complete') {
+      const activeTabId = await getActiveTabId();
+      const targetTabId = tabId;
+      if (activeTabId != targetTabId) {
+        await toggleInjection(activeTabId, "off");
+        await setActiveTabId(targetTabId);
+        await injectScript(targetTabId);
+        await toggleInjection(targetTabId, "on");
+      }
+    }*/
+})
 
 ///////////////////////////
 // chrome event listners //
