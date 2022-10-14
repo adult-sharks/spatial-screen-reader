@@ -1,7 +1,6 @@
 ////////////////
 // core logic //
 ////////////////
-
 const getActivityStatus = async () => {
   const { activityStatus } = await chrome.storage.local.get(["activityStatus"]);
   if (activityStatus === undefined) return false;
@@ -102,20 +101,6 @@ const abortCycle = async () => {
   console.log("sharks🦈-off");
 };
 
-/*
-const changeTab = async () => {
-  try {
-    const targetTabId = await queryActiveTabId();
-    console.log(targetTabId)
-    await setActiveTabId(targetTabId);
-    if (await chrome.storage.local.get(["activityStatus"]) == true)
-      await injectScript(targetTabId);
-  }
-  catch (err) {
-    console.error(err)
-  }
-}*/
-
 
 const changeTab = async (tabId) => {
   const activityStatus = await getActivityStatus();
@@ -126,7 +111,8 @@ const changeTab = async (tabId) => {
     if (activeTabId != targetTabId) {
       await toggleInjection(activeTabId, "off");
       await setActiveTabId(targetTabId);
-      await injectScript(targetTabId);
+      if ((await checkInjection(targetTabId)) === false)
+        await injectScript(targetTabId);
       await toggleInjection(targetTabId, "on");
     }
     else {
@@ -137,11 +123,9 @@ const changeTab = async (tabId) => {
   }
 }
 
-
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
   await changeTab(tabId);
 })
-
 
 chrome.tabs.onActivated.addListener(async function (changeInfo, tab) {
   await changeTab(changeInfo.tabId);
