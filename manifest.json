@@ -48,7 +48,7 @@
   },
   "sandbox": {
     "pages": [
-      "sandbox.html"
+      "src/sandbox/sandbox.html"
     ]
   }
 }
