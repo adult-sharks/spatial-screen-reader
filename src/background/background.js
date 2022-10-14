@@ -4,6 +4,7 @@
 
 // getActivityStatus: chrome.storage에서 작동 상태(true|false)를 불러옵니다
 // 불러온 값이 undefined 일 경우 false를 리턴합니다
+
 const getActivityStatus = async () => {
   const { activityStatus } = await chrome.storage.local.get(["activityStatus"]);
   if (activityStatus === undefined) return false;
@@ -25,10 +26,7 @@ const setActivityStatus = async (status) => {
 
 const queryActiveTabId = async () => {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tabs.length > 0) {
-    console.log(tabs)
-    return tabs[0].id;
-  }
+  if (tabs.length > 0) return tabs[0].id;
   else return new Error("Cannot parse active tab");
 };
 
@@ -110,10 +108,12 @@ const injectScript = async (targetTabId) => {
 const launchCycle = async () => {
   const targetTabId = await queryActiveTabId();
   await setActiveTabId(targetTabId);
+
   await openHandlerTab();
   if ((await checkInjection(targetTabId)) === false)
     await injectScript(targetTabId);
   await toggleInjection(targetTabId, "on");
+
   console.log("sharks🦈-on");
 };
 
@@ -123,38 +123,10 @@ const abortCycle = async () => {
   const targetTabId = await getActiveTabId();
   await closeHandlerTab();
   await toggleInjection(targetTabId, "off");
+
   console.log("sharks🦈-off");
 };
 
-
-const changeTab = async (tabId) => {
-  const activityStatus = await getActivityStatus();
-  if (activityStatus == true) {
-    const activeTabId = await getActiveTabId();
-    const targetTabId = tabId;
-    console.log(tabId, activeTabId)
-    if (activeTabId != targetTabId) {
-      await toggleInjection(activeTabId, "off");
-      await setActiveTabId(targetTabId);
-      if ((await checkInjection(targetTabId)) === false)
-        await injectScript(targetTabId);
-      await toggleInjection(targetTabId, "on");
-    }
-    else {
-      if ((await checkInjection(targetTabId)) === false)
-        await injectScript(targetTabId);
-      await toggleInjection(targetTabId, "on");
-    }
-  }
-}
-
-chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
-  await changeTab(tabId);
-})
-
-chrome.tabs.onActivated.addListener(async function (changeInfo, tab) {
-  await changeTab(changeInfo.tabId);
-})
 ///////////////////////////
 // chrome event listners //
 ///////////////////////////
@@ -164,7 +136,7 @@ chrome.tabs.onActivated.addListener(async function (changeInfo, tab) {
 
 chrome.action.onClicked.addListener(async (tab) => {
   const activityStatus = await getActivityStatus();
-  if (activityStatus === false) launchCycle().catch((err) => { });
+  if (activityStatus === false) launchCycle().catch((err) => {});
   if (activityStatus === true) abortCycle();
 });
 
@@ -185,7 +157,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       // 이는 처음에 handler 탭이 활성화 되기 때문입니다
       getActiveTabId()
         .then((tabId) => {
-          chrome.tabs.update(tabId, { active: true }, () => { });
+          chrome.tabs.update(tabId, { active: true }, () => {});
         })
         .catch((err) => {
           console.error(err);
