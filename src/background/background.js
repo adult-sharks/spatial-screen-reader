@@ -127,6 +127,34 @@ const abortCycle = async () => {
   console.log("sharks🦈-off");
 };
 
+const changeTab = async (tabId) => {
+  const activityStatus = await getActivityStatus();
+  if (activityStatus == true) {
+    const activeTabId = await getActiveTabId();
+    const targetTabId = tabId;
+    console.log(tabId, activeTabId);
+    if (activeTabId != targetTabId) {
+      await toggleInjection(activeTabId, "off");
+      await setActiveTabId(targetTabId);
+      if ((await checkInjection(targetTabId)) === false)
+        await injectScript(targetTabId);
+      await toggleInjection(targetTabId, "on");
+    } else {
+      if ((await checkInjection(targetTabId)) === false)
+        await injectScript(targetTabId);
+      await toggleInjection(targetTabId, "on");
+    }
+  }
+};
+
+chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+  await changeTab(tabId);
+});
+
+chrome.tabs.onActivated.addListener(async function (changeInfo, tab) {
+  await changeTab(changeInfo.tabId);
+});
+
 ///////////////////////////
 // chrome event listners //
 ///////////////////////////
