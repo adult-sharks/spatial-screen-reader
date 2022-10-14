@@ -5,6 +5,8 @@
 const player = document.getElementById("player");
 const sandbox = document.getElementById("sandbox");
 const streamCanvas = document.createElement("canvas");
+// html에서 id를 이용해 특정 노드를 가져오는 법
+const ajaxBtn = document.getElementById("btn-post");
 let screenContext;
 let screenStream;
 let screenInterval;
@@ -15,6 +17,10 @@ var mouseY = 0;
 ////////////////
 // core logic //
 ////////////////
+
+// click 이벤트 핸들러
+ajaxBtn.addEventListener("click", do_ajax());
+
 function do_ajax() {
   var req = new XMLHttpRequest();
   var result = document.getElementById("result");
