@@ -1,26 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stream Handler</title>
-  <style>
-    /* #player{
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stream Handler</title>
+
+    <style>
+      /* #player{
       width: 300px;
       height: 100px;
     } */
-    #sandbox{
-      width: 1000px;
-      height: 700px;
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <iframe id="sandbox" src="../sandbox/sandbox.html"></iframe>
-    <video id="player" autoplay muted></video>
-  </main>
-  <script src="handler.js"></script>
-</body>
+      #sandbox {
+        width: 1000px;
+        height: 700px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <form action="index" method="post">
+        <label>Name:<input type="text" id="name" value="" /></label>
+        <button type="button" id="btn-post" onclick="do_ajax();">Click</button>
+        <div id="result">123</div>
+      </form>
+      <iframe id="sandbox" src="../sandbox/sandbox.html"></iframe>
+      <video id="player" autoplay muted></video>
+    </main>
+    <script src="handler.js"></script>
+  </body>
 </html>

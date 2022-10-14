@@ -15,5 +15,6 @@
   "bugs": {
     "url": "https://github.com/adult-sharks/sonar-mv3/issues"
   },
-  "homepage": "https://github.com/adult-sharks/sonar-mv3#readme"
+  "homepage": "https://github.com/adult-sharks/sonar-mv3#readme",
+  "dependencies": {}
 }

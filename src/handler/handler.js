@@ -15,6 +15,24 @@ var mouseY = 0;
 ////////////////
 // core logic //
 ////////////////
+function do_ajax() {
+  var req = new XMLHttpRequest();
+  var result = document.getElementById("result");
+  req.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status == 200) {
+      result.innerHTML = this.responseText;
+    } else {
+      result.innerHTML = "abc...";
+    }
+  };
+
+  req.open("POST", "/", true);
+  req.setRequestHeader(
+    "content-type",
+    "application/x-www-form-urlencoded;charset=UTF-8"
+  );
+  req.send("name=" + document.getElementById("name").value);
+}
 
 const getStreamId = async () => {
   return new Promise((resolve, reject) => {
@@ -114,8 +132,11 @@ const abortCycle = async () => {
   closeWindow();
 };
 
-const getCoordinateData = async() => {
-  const { mouseX, mouseY } = await chrome.storage.local.get(["mouseX", "mouseY"]);
+const getCoordinateData = async () => {
+  const { mouseX, mouseY } = await chrome.storage.local.get([
+    "mouseX",
+    "mouseY",
+  ]);
   // inject.js 에서 제대로 받아오면 추가하기
   // sandbox.contentWindow.postMessage(mouseX + "," + mouseY, "*");
 };
