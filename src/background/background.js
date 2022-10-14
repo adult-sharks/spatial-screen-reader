@@ -115,22 +115,29 @@ const changeTab = async () => {
     console.error(err)
   }
 }*/
+const changeTab = async (tabId) => {
+  const activeTabId = await getActiveTabId();
+  const targetTabId = tabId;
+  console.log(tabId, activeTabId)
+
+  if (activeTabId != targetTabId) {
+    await toggleInjection(activeTabId, "off");
+    await setActiveTabId(targetTabId);
+    await injectScript(targetTabId);
+    await toggleInjection(targetTabId, "on");
+  }
+}
 
 
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-  console.log(tabId, changeInfo, tab)
-  /*  if (changeInfo.status == 'complete') {
-      const activeTabId = await getActiveTabId();
-      const targetTabId = tabId;
-      if (activeTabId != targetTabId) {
-        await toggleInjection(activeTabId, "off");
-        await setActiveTabId(targetTabId);
-        await injectScript(targetTabId);
-        await toggleInjection(targetTabId, "on");
-      }
-    }*/
+chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+
+  await changeTab(tabId);
 })
 
+
+chrome.tabs.onActivated.addListener(async function (changeInfo, tab) {
+  await changeTab(changeInfo.tabId);
+})
 ///////////////////////////
 // chrome event listners //
 ///////////////////////////

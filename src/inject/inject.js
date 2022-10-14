@@ -20,15 +20,12 @@ function speak(text, opt_prop) {
   // if reading, cancel TTS
 
   window.speechSynthesis.cancel()
-
   const prop = opt_prop || {}
-
   const speechMsg = new SpeechSynthesisUtterance()
   speechMsg.rate = prop.rate || 1
   speechMsg.pitch = prop.pitch || 1
   speechMsg.lang = prop.lang || "ko-KR"
   speechMsg.text = text
-
   window.speechSynthesis.speak(speechMsg)
 }
 
@@ -131,8 +128,6 @@ const stopCycle = () => {
     window.speechSynthesis.cancel()
   }
 };
-
-
 
 
 ///////////////////////////
