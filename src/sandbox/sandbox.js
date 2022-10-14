@@ -83,7 +83,6 @@ window.addEventListener("message", (event) => {
   } else {
     curMouseX = parseInt(event.data.split("/")[0]);
     curMouseY = parseInt(event.data.split("/")[1]);
-
     if (curMouseX != prevMouseX && curMouseY != prevMouseY) {
       getCoordinateData(curMouseX, curMouseY);
     }
