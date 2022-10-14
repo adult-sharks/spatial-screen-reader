@@ -4,7 +4,9 @@
   "description": "A chromium plugin based on openCV for visually impaired people",
   "version": "1.1.0",
   "options_page": "./src/option/option.html",
-  "background": { "service_worker": "./src/background/background.js" },
+  "background": {
+    "service_worker": "./src/background/background.js"
+  },
   "action": {
     "default_icon": {
       "16": "./asset/icon/icon-16.png",
@@ -13,7 +15,7 @@
     },
     "default_title": "Sonar"
   },
-  "icons":{
+  "icons": {
     "16": "./asset/icon/icon-16.png",
     "32": "./asset/icon/icon-32.png",
     "48": "./asset/icon/icon-48.png",
@@ -25,15 +27,20 @@
     "storage",
     "alarms",
     "scripting",
-    "desktopCapture" 
+    "desktopCapture",
+    "webNavigation"
   ],
   "host_permissions": [
     "<all_urls>"
-  ], 
+  ],
   "web_accessible_resources": [
     {
-      "resources": ["/src/handler/handler.html"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "/src/handler/handler.html"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "content_security_policy": {
