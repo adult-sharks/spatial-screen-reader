@@ -127,6 +127,9 @@ const abortCycle = async () => {
   console.log("sharks🦈-off");
 };
 
+
+// 멀티탭 이동을 지원합니다. 
+// 완전히 종료되었는지의 여부를 handler.js 의 activityStatus 변수로 확인합니다. 
 const changeTab = async (tabId) => {
   const activityStatus = await getActivityStatus();
   if (activityStatus == true) {
@@ -164,7 +167,7 @@ chrome.tabs.onActivated.addListener(async function (changeInfo, tab) {
 
 chrome.action.onClicked.addListener(async (tab) => {
   const activityStatus = await getActivityStatus();
-  if (activityStatus === false) launchCycle().catch((err) => {});
+  if (activityStatus === false) launchCycle().catch((err) => { });
   if (activityStatus === true) abortCycle();
 });
 
@@ -185,7 +188,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       // 이는 처음에 handler 탭이 활성화 되기 때문입니다
       getActiveTabId()
         .then((tabId) => {
-          chrome.tabs.update(tabId, { active: true }, () => {});
+          chrome.tabs.update(tabId, { active: true }, () => { });
         })
         .catch((err) => {
           console.error(err);
