@@ -127,36 +127,26 @@ const abortCycle = async () => {
   console.log("sharks🦈-off");
 };
 
-
-// 멀티탭 이동을 지원합니다. 
-// 완전히 종료되었는지의 여부를 handler.js 의 activityStatus 변수로 확인합니다. 
-const changeTab = async (tabId) => {
+// 멀티탭 이동을 지원합니다.
+// 완전히 종료되었는지의 여부를 handler.js 의 activityStatus 변수로 확인합니다.
+const onChangeTab = async (tabId) => {
   const activityStatus = await getActivityStatus();
-  if (activityStatus == true) {
-    const activeTabId = await getActiveTabId();
-    const targetTabId = tabId;
-    console.log(tabId, activeTabId);
-    if (activeTabId != targetTabId) {
-      await toggleInjection(activeTabId, "off");
-      await setActiveTabId(targetTabId);
-      if ((await checkInjection(targetTabId)) === false)
-        await injectScript(targetTabId);
-      await toggleInjection(targetTabId, "on");
-    } else {
-      if ((await checkInjection(targetTabId)) === false)
-        await injectScript(targetTabId);
-      await toggleInjection(targetTabId, "on");
-    }
+  if (activityStatus == false) return;
+
+  const priorActiveTabId = await getActiveTabId();
+  const targetTabId = tabId;
+
+  // 과거 활성화된 탭(priorActiveTabId)와 목표 탭(targetTabId)이 다를 경우 활성화 탭을 바꿉니다
+  if (priorActiveTabId != targetTabId) {
+    await toggleInjection(priorActiveTabId, "off");
+    await setActiveTabId(targetTabId);
   }
+
+  if ((await checkInjection(targetTabId)) === false)
+    await injectScript(targetTabId);
+
+  await toggleInjection(targetTabId, "on");
 };
-
-chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
-  await changeTab(tabId);
-});
-
-chrome.tabs.onActivated.addListener(async function (changeInfo, tab) {
-  await changeTab(changeInfo.tabId);
-});
 
 ///////////////////////////
 // chrome event listners //
@@ -167,8 +157,19 @@ chrome.tabs.onActivated.addListener(async function (changeInfo, tab) {
 
 chrome.action.onClicked.addListener(async (tab) => {
   const activityStatus = await getActivityStatus();
-  if (activityStatus === false) launchCycle().catch((err) => { });
+  if (activityStatus === false) launchCycle().catch((err) => {});
   if (activityStatus === true) abortCycle();
+});
+
+// 크롬 내 탭 변경이 이루어 질때 반응하는 이벤트 리스너입니다
+// onUpdated는 페이지 리로드를, onActivated는 탭 변경을 추적합니다
+
+chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+  await onChangeTab(tabId);
+});
+
+chrome.tabs.onActivated.addListener(async function (changeInfo, tab) {
+  await onChangeTab(changeInfo.tabId);
 });
 
 // 크롬 클라이언트가 최초로 켜졌을 때 반응하는 이벤트 리스너입니다
@@ -188,7 +189,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       // 이는 처음에 handler 탭이 활성화 되기 때문입니다
       getActiveTabId()
         .then((tabId) => {
-          chrome.tabs.update(tabId, { active: true }, () => { });
+          chrome.tabs.update(tabId, { active: true }, () => {});
         })
         .catch((err) => {
           console.error(err);
