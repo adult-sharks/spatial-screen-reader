@@ -61,18 +61,18 @@ var elementToSpeech = function () {
 
 // ==== Cursor function ==== //
 // 커서를 세팅해줍니다.
-const changeCursor = () => {
+function changeCursor() {
   // add CSS of Cursor
   css.innerHTML = `*{cursor: ${cursorUri}!important;}`;
   document.body.appendChild(css);
-};
+}
 // 커서 CSS 를 리셋합니다.
-const resetCursor = () => {
+function resetCursor() {
   if (css != undefined) document.body.removeChild(css);
-};
+}
 
 // 마우스가 움직였을 때 리스너에서 호출되는 call back 함수로 마우스 좌표를 세팅하고 TTS 를 실행합니다.
-const logKey = async (e) => {
+async function logKey(e) {
   // Set timer 1000ms
   // When 'logKey()' is not overwritten, elementToSpeech is called after 1s
   // Clear timer when function is called
@@ -87,30 +87,30 @@ const logKey = async (e) => {
   if (window.speechSynthesis.speaking) {
     window.speechSynthesis.cancel();
   }
-};
+}
 
 // ==== COMMUNICATION 컴포넌트 ==== //
 ///////////////////////////
 // window event listners //
 ///////////////////////////
 // 마우스가 움직였을 때 반응하는 이벤트 리스터로 logkey 함수를 실행합니다.
-const mouseEventListener = () => {
+function mouseEventListener() {
   document.removeEventListener("mousemove", logKey);
   document.addEventListener("mousemove", logKey);
-};
+}
 
 ////////////////
 // core logic //
 ////////////////
 // inject.js 의 StartCycle 함수입니다.
-const startCycle = () => {
+function startCycle() {
   console.log("mouse on");
   changeCursor();
   mouseEventListener();
-};
+}
 
 // inject.js 의 soptCycle 함수입니다.
-const stopCycle = () => {
+function stopCycle() {
   console.log("mouse off");
   document.removeEventListener("mousemove", logKey);
   clearTimeout(timer);
@@ -118,7 +118,7 @@ const stopCycle = () => {
   if (window.speechSynthesis.speaking) {
     window.speechSynthesis.cancel();
   }
-};
+}
 
 ///////////////////////////
 // chrome event listners //
