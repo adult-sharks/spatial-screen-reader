@@ -2,21 +2,21 @@
 // local variables //
 /////////////////////
 
-var sandboxHeight;
-var sandboxWidth;
+const sandboxHeight = 700;
+const sandboxWidth = 1000;
 var windowHeight = 0;
 var windowWidth = 0;
 
 var timer;
 var remoteStream;
 
-var curMouseX;
-var curMouseY;
+var propMouseX;
+var propMouseY;
 var prevMouseX;
 var prevMouseY;
 
-const initialFreq = 50;
-const initialVol = 1;
+const initialFreq = 100;
+const initialVol = 0;
 const imageContainer = document.getElementById("output");
 
 // web audio api context를 생성합니다
@@ -55,7 +55,7 @@ gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
 // exponentialRampToValueAtTime(도달 값, 도달 목표 시간) - 시간에 따라 소리를 지수적(u자형 커브)으로 증가시킵니다
 // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
 const setVolume = (param, my) => {
-  oscillator.frequency.value = initialFreq + 50 * (my / sandboxHeight);
+  // oscillator.frequency.value = initialFreq + 50 * (my / sandboxHeight);
   gainNode.gain.exponentialRampToValueAtTime(
     param / 100,
     audioCtx.currentTime + 0.1
@@ -64,18 +64,19 @@ const setVolume = (param, my) => {
 
 // getCoordinateData(): 커서의 위치에 따라 소리 파라미터를 생성합니다
 const getCoordinateData = (mouseX, mouseY) => {
-  let output = document.getElementById("edgeDetectionCanvas");
-  let c = output.getContext("2d");
+  const detectionCanvas = document.getElementById("edgeDetectionCanvas");
+  const detectionCanvasContext = detectionCanvas.getContext("2d");
 
   // 캔버스 상의 이미지로부터 주어진 좌표 값의 값을 추출합니다
   // getImageData(x좌표, y좌표, 가로 영역 크기(px), 세로 영역 크기(px))
   // my : 마우스 위치를 위로 이동시켜 커서의 영향을 받지 않도록 함
-  let mx = mouseX;
-  let my = mouseY - 50 >= 0 ? mouseY - 50 : 0;
-  let p = c.getImageData(mx, my, 1, 1).data;
+  const mx = mouseX;
+  // const my = mouseY;
+  const my = mouseY - 50 >= 0 ? mouseY - 50 : 0;
+  const p = detectionCanvasContext.getImageData(mx, my, 1, 1).data;
 
   // brightness가 존재하지 않으면 1로 값을 지정
-  let brightness = p[0] ? p[0] : 1;
+  const brightness = p[0] ? p[0] : 1;
 
   console.log(mouseX + ", " + mouseY + " => " + brightness);
   clearTimeout(timer);
@@ -104,34 +105,26 @@ const updateCanvas = setInterval(() => {
 window.addEventListener("message", (event) => {
   if (event.data[0] == "d") {
     imageContainer.src = event.data;
-  } 
-  else if (event.data[0] == "w") {
+  } else if (event.data[0] == "w") {
     windowWidth = parseInt(event.data.split("/")[1]);
     windowHeight = parseInt(event.data.split("/")[2]);
-  } 
-  else if (windowHeight > 0 && windowWidth > 0) {
+  } else if (windowHeight > 0 && windowWidth > 0) {
     let mx = parseInt(event.data.split("/")[0]);
     let my = parseInt(event.data.split("/")[1]);
 
-    // 브라우저 윈도우에 위치한 마우스 좌표값(mx, my)을 
-    // 샌드박스에 위치한 마우스 좌표값(curMouseX, curMouseY)으로 변형
-    // ex) my : windowHeight = curMouseY : sandboxHeight 와 같은 비례식
-    curMouseX = parseInt(mx * (sandboxWidth / windowWidth));
-    curMouseY = parseInt(my * (sandboxHeight / windowHeight));
-    if (curMouseX != prevMouseX || curMouseY != prevMouseY) {
-      getCoordinateData(curMouseX, curMouseY);
+    // 브라우저 윈도우에 위치한 마우스 좌표값(mx, my)을
+    // 샌드박스에 위치한 마우스 좌표값(propMouseX, propMouseY)으로 변형
+    // ex) my : windowHeight = propMouseY : sandboxHeight 와 같은 비례식
+    propMouseX = ~~(mx * (sandboxWidth / windowWidth));
+    propMouseY = ~~(my * (sandboxHeight / windowHeight));
+    if (propMouseX != prevMouseX || propMouseY != prevMouseY) {
+      getCoordinateData(propMouseX, propMouseY);
     }
-    prevMouseX = curMouseX;
-    prevMouseY = curMouseY;
+    prevMouseX = propMouseX;
+    prevMouseY = propMouseY;
   }
 });
 
 window.addEventListener("load", () => {
-  const output = document.getElementById("edgeDetectionCanvas");
   imageContainer.style.display = "none";
-
-  sandboxHeight = 700;
-  sandboxWidth = 1000;
-  output.setAttribute("height", sandboxHeight);
-  output.setAttribute("width", sandboxWidth);
 });

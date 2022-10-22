@@ -81,10 +81,13 @@ const closeWindow = () => {
 const setSandboxStreamInterval = () => {
   streamCanvas.height = screenStream.getVideoTracks()[0].getSettings().height;
   streamCanvas.width = screenStream.getVideoTracks()[0].getSettings().width;
-  let windowWidth = window.innerWidth;
-  let windowHeight = window.innerHeight; 
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
 
-  sandbox.contentWindow.postMessage("window/" + windowWidth + "/" + windowHeight, "*");
+  sandbox.contentWindow.postMessage(
+    "window/" + windowWidth + "/" + windowHeight,
+    "*"
+  );
   screenInterval = setInterval(() => {
     screenContext = streamCanvas.getContext("2d");
     screenContext.drawImage(player, 0, 0);
@@ -113,8 +116,11 @@ const abortCycle = async () => {
   closeWindow();
 };
 
-const getCoordinateData = async() => {
-  const { mouseX, mouseY } = await chrome.storage.local.get(["mouseX", "mouseY"]);
+const getCoordinateData = async () => {
+  const { mouseX, mouseY } = await chrome.storage.local.get([
+    "mouseX",
+    "mouseY",
+  ]);
   sandbox.contentWindow.postMessage(mouseX + "/" + mouseY, "*");
 };
 

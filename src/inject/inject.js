@@ -80,9 +80,13 @@ async function logKey(e) {
   timer = setTimeout(elementToSpeech, 1000);
   // Get client window size
   // Pass it to chrome local storage
-  let mx = e.screenX;
-  let my = e.screenY;
-  await chrome.storage.local.set({ mouseX: mx, mouseY: my });
+  const cursorX = e.clientX;
+  const cursorY = e.clientY;
+  const addressBarHeight = window.outerHeight - window.innerHeight;
+  await chrome.storage.local.set({
+    mouseX: cursorX,
+    mouseY: cursorY + addressBarHeight,
+  });
   //  Cancel if there is running TTS
   if (window.speechSynthesis.speaking) {
     window.speechSynthesis.cancel();
