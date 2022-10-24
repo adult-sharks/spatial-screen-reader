@@ -2,8 +2,9 @@
 // local variables //
 /////////////////////
 
-const sandboxHeight = 700;
-const sandboxWidth = 1000;
+const sandboxHeight = 500;
+const sandboxWidth = 500;
+const pixelRatio = window.devicePixelRatio;
 var imageHeight = 0;
 var imageWidth = 0;
 
@@ -54,10 +55,10 @@ const initializeAudioNode = () => {
 // 커서의 높이 값에 따라 frequency를 증가시키며 커서의 높이 값을 음성으로 전달합니다.
 // exponentialRampToValueAtTime(도달 값, 도달 목표 시간) - 시간에 따라 소리를 지수적(u자형 커브)으로 증가시킵니다
 // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
-const setVolume = (param) => {
+const setVolume = (param, delay) => {
   gainNode.gain.exponentialRampToValueAtTime(
     param / 150,
-    audioCtx.currentTime + 0.1
+    audioCtx.currentTime + delay
   );
 };
 
@@ -80,34 +81,18 @@ const getBrightness = (mouseX, mouseY) => {
   // brightness가 존재하지 않으면 1로 값을 지정
   // 디버깅용 콘솔 출력
   const brightness = brightnessArray[0] ? brightnessArray[0] : 1;
-  console.log(mouseX + ", " + mouseY + " => " + brightness);
+  // console.log(mouseX + ", " + mouseY + " => " + brightness);
 
   return brightness;
 };
 
-// registerCanvasInterval: 일정한 간격에 따라 imageContainer의 내용을 읽어 영상처리를 하는 인터벌을 등록합니다.
-// const registerCanvasInterval = () => {
-//   /*
-//   cv.cvtColor = 이미지 흑백화
-//   cv.Canny = 이미지 경계검출
-//   cv.blur = 이미지 블러
-//   cv.imshow = 캔버스 이미지 출력
-//   */
-//   canvasUpdateInterval = setInterval(() => {
-//     const src = cv.imread(imageContainer);
-//     const rsize = new cv.Size(sandboxWidth, sandboxHeight);
-//     const ksize = new cv.Size(10, 10);
-//     const anchor = new cv.Point(-1, -1);
-//     cv.resize(src, src, rsize, 0, 0, cv.INTER_AREA);
-//     cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
-//     cv.Canny(src, src, 30, 100, 5, false);
-//     cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
-//     cv.imshow("detectionCanvas", src);
-//     src.delete();
-//   }, 600);
-// };
-
 const canvasCapture = () => {
+  /*
+  cv.cvtColor = 이미지 흑백화
+  cv.Canny = 이미지 경계검출
+  cv.blur = 이미지 블러
+  cv.imshow = 캔버스 이미지 출력
+  */
   const src = cv.imread(imageContainer);
   const rsize = new cv.Size(sandboxWidth, sandboxHeight);
   const ksize = new cv.Size(10, 10);
@@ -120,17 +105,12 @@ const canvasCapture = () => {
   src.delete();
 };
 
-// removeCanvasInterval: 영상처리 인터벌을 제거합니다.
-// const removeCanvasInterval = () => {
-//   clearInterval(canvasUpdateInterval);
-// };
-
 // registerCursorSleepTimeout: 커서가 1초동안 움직이지 않으면 소리가 멈추는 timeout을 등록합니다
 const registerCursorSleepTimeout = () => {
   clearTimeout(cursorSleepTimeout);
   cursorSleepTimeout = setTimeout(() => {
-    setVolume(1);
-  }, 1000);
+    setVolume(1, 0.5);
+  }, 500);
 };
 
 const loadImage = (imageNode, data) => {
@@ -144,8 +124,8 @@ const onMessageHandler = async (event) => {
   if (event.data[0] == "d") {
     await loadImage(imageContainer, event.data);
     // ~: bitwise not(이진연산 not을 두번 = 정수형 반환)
-    imageWidth = ~~(imageContainer.width / 2);
-    imageHeight = ~~(imageContainer.height / 2);
+    imageWidth = ~~(imageContainer.width / pixelRatio);
+    imageHeight = ~~(imageContainer.height / pixelRatio);
     canvasCapture();
   } else if (imageHeight > 0 && imageWidth > 0) {
     const dataArray = event.data.split("/");
@@ -158,7 +138,7 @@ const onMessageHandler = async (event) => {
     cursorX = ~~(mx * (sandboxWidth / imageWidth));
     cursorY = ~~(my * (sandboxHeight / imageHeight));
     if (cursorX != prevCursorX || cursorY != prevCursorY) {
-      setVolume(getBrightness(cursorX, cursorY));
+      setVolume(getBrightness(cursorX, cursorY), 0.1);
       registerCursorSleepTimeout();
     }
     prevCursorX = cursorX;
@@ -177,11 +157,9 @@ const removeMessageHandler = () => {
 const launchCycle = () => {
   initializeAudioNode();
   registerMessageHandler();
-  // registerCanvasInterval();
 };
 
 const abortCycle = () => {
-  // removeCanvasInterval();
   removeMessageHandler();
 };
 

@@ -69,8 +69,7 @@ const captureScreen = async () => {
   const isValidTab = await checkValidUrlbyId(activeTabId);
   if (isValidTab) {
     screenDataUri = await chrome.tabs.captureVisibleTab();
-    if (previousDataUri === screenDataUri) console.log("got same image");
-    postScreen(screenDataUri);
+    if (previousDataUri !== screenDataUri) postScreen(screenDataUri);
     previousDataUri = screenDataUri;
   }
 };
@@ -78,16 +77,6 @@ const captureScreen = async () => {
 // postScreen: dataURI로 전달받은 화면 이미지를 sandbox로 전달합니다
 const postScreen = (screenDataUri) => {
   sandbox.contentWindow.postMessage(screenDataUri, "*");
-};
-
-// startCapture: 일정한 간격으로 captureScreen을 호출하는 인터벌을 등록합니다
-const startCapture = () => {
-  screenCaptureInterval = setInterval(captureScreen, captureIntervalParam);
-};
-
-// stopCapture: captureScreen 호출 인터벌을 제거합니다
-const stopCapture = async () => {
-  clearInterval(screenCaptureInterval);
 };
 
 // closeWindow: 현재 창을 닫습니다
@@ -104,23 +93,10 @@ const postCursorCoordinate = async () => {
   sandbox.contentWindow.postMessage("cursor/" + cursorX + "/" + cursorY, "*");
 };
 
-// postWindowSize: 현재 창의 윈도우 내부 크기를 sandbox에 전달합니다
-const postWindowSize = () => {
-  const windowWidth = window.innerWidth;
-  const windowHeight = window.innerHeight;
-
-  sandbox.contentWindow.postMessage(
-    "window/" + windowWidth + "/" + windowHeight,
-    "*"
-  );
-};
-
 // handler.js의 launchCycle 입니다
 const launchCycle = async () => {
   await setActivityStatus(true);
   await setActivityBadge("on");
-  // postWindowSize();
-  // startCapture();
   sendReadyMessage();
 };
 
@@ -128,7 +104,6 @@ const launchCycle = async () => {
 const abortCycle = async () => {
   await setActivityStatus(false);
   await setActivityBadge("off");
-  // stopCapture();
   closeWindow();
 };
 

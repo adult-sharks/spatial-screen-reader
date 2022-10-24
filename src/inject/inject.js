@@ -12,10 +12,11 @@
 let koreaRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
 // TTS 지연을 위해 설정한 타이머입니다.
 let readTimeout;
+let scrollTimeout;
 let doneFirstTouch = false;
 let readTimeParam = 600;
 let domObserver = new MutationObserver(onDomMutation);
-let observerConfig = {
+let domObserverConfig = {
   attributes: false,
   childList: true,
   subtree: true,
@@ -114,7 +115,7 @@ async function onCursorMove(e) {
   clearTimeout(readTimeout);
   readTimeout = setTimeout(() => {
     const text = extractTextFromTree(e.path);
-    speak(text, { rate: 1.0, pitch: 1.0 });
+    // speak(text, { rate: 1.0, pitch: 1.0 });
   }, readTimeParam);
 }
 
@@ -128,7 +129,7 @@ function onTouch(e) {
       doneFirstTouch = false;
     }, 300);
     const text = extractTextFromTree(e.path);
-    speak(text, { rate: 1.0, pitch: 1.0 });
+    // speak(text, { rate: 1.0, pitch: 1.0 });
   } else {
     // 두번째 클릭하는 경우
     if (window.speechSynthesis.speaking) {
@@ -138,7 +139,7 @@ function onTouch(e) {
     for (i = 0; i < e.path.length; i++) {
       if (e.path[i].href) {
         window.location.href = e.path[i].href;
-        speak("이동", { rate: 1.0, pitch: 1.0 });
+        // speak("이동", { rate: 1.0, pitch: 1.0 });
         break;
       }
     }
@@ -161,12 +162,41 @@ function onDomMutation(mutationList, observer) {
   if (mutationList.length > 1) chrome.runtime.sendMessage({ key: "domChange" });
 }
 
-function deployObserver() {
-  domObserver.observe(document, observerConfig);
+function deployDomObserver() {
+  domObserver.observe(document, domObserverConfig);
 }
 
-function haltObserver() {
+function haltDomObserver() {
   domObserver.disconnect();
+}
+
+function onDoubleClick(e) {
+  e.preventDefault();
+  const nodeTree = e.path;
+  for (i = 0; i < nodeTree.length; i++) {
+    if (nodeTree[i].href) {
+      window.location.href = nodeTree[i].href;
+      break;
+    }
+  }
+}
+
+function isTouchDevice() {
+  return (
+    "ontouchstart" in window ||
+    navigator.maxTouchPoints > 0 ||
+    navigator.msMaxTouchPoints > 0
+  );
+}
+
+function onScroll() {
+  if (scrollTimeout) clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    chrome.runtime.sendMessage({ key: "domChange" });
+    console.log("requested");
+    isScrolling = false;
+    clearTimeout(scrollTimeout);
+  }, 800);
 }
 
 ///////////////////////////
@@ -179,23 +209,29 @@ function setMouseEventListener() {
   document.addEventListener("mousemove", onCursorMove);
 }
 
+function removeMouseEventListener() {
+  document.removeEventListener("mousemove", onCursorMove);
+}
+
 function setTouchEventListener() {
   document.removeEventListener("touchstart", onTouch);
   document.addEventListener("touchstart", onTouch, { passive: false });
   document.removeEventListener("touchmove", onTouchMove);
   document.addEventListener("touchmove", onTouchMove);
+  document.removeEventListener("contextmenu", onDoubleClick);
+  document.addEventListener("contextmenu", onDoubleClick);
 }
 
-document.addEventListener("contextmenu", (e) => {
-  e.preventDefault();
-  const nodeTree = e.path;
-  for (i = 0; i < nodeTree.length; i++) {
-    if (nodeTree[i].href) {
-      window.location.href = nodeTree[i].href;
-      break;
-    }
-  }
-});
+function removeTouchEventListener() {
+  document.removeEventListener("touchstart", onTouch);
+  document.removeEventListener("touchmove", onTouchMove);
+  document.removeEventListener("contextmenu", onDoubleClick);
+}
+
+function setScrollEventListener() {
+  document.removeEventListener("scroll", onScroll);
+  document.addEventListener("scroll", onScroll);
+}
 
 ////////////////
 // core logic //
@@ -205,18 +241,18 @@ document.addEventListener("contextmenu", (e) => {
 function launchCycle() {
   // changeCursor();
   setMouseEventListener();
-  setTouchEventListener();
-  deployObserver();
+  setScrollEventListener();
+  if (isTouchDevice()) setTouchEventListener();
+  deployDomObserver();
 }
 
 // inject.js 의 abortCycle 함수입니다.
 function abortCycle() {
-  document.removeEventListener("mousemove", onCursorMove);
-  document.removeEventListener("touchstart", onTouch);
-  document.addEventListener("touchmove", onTouchMove);
-  haltObserver();
-  clearTimeout(readTimeout);
   // resetCursor();
+  removeMouseEventListener();
+  if (isTouchDevice) removeTouchEventListener();
+  haltDomObserver();
+  clearTimeout(readTimeout);
   if (window.speechSynthesis.speaking) {
     window.speechSynthesis.cancel();
   }
