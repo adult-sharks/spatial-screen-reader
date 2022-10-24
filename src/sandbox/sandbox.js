@@ -15,7 +15,7 @@ var cursorY;
 var prevCursorX;
 var prevCursorY;
 
-const initialFreq = 100;
+const initialFreq = 150;
 const initialVol = 0;
 const imageContainer = document.getElementById("imageContainer");
 // const imageContainer = new Image();
@@ -86,31 +86,44 @@ const getBrightness = (mouseX, mouseY) => {
 };
 
 // registerCanvasInterval: 일정한 간격에 따라 imageContainer의 내용을 읽어 영상처리를 하는 인터벌을 등록합니다.
-const registerCanvasInterval = () => {
-  /* 
-  cv.cvtColor = 이미지 흑백화
-  cv.Canny = 이미지 경계검출
-  cv.blur = 이미지 블러
-  cv.imshow = 캔버스 이미지 출력
-  */
-  canvasUpdateInterval = setInterval(() => {
-    const src = cv.imread(imageContainer);
-    const rsize = new cv.Size(sandboxWidth, sandboxHeight);
-    const ksize = new cv.Size(10, 10);
-    const anchor = new cv.Point(-1, -1);
-    cv.resize(src, src, rsize, 0, 0, cv.INTER_AREA);
-    cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
-    cv.Canny(src, src, 30, 100, 5, false);
-    cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
-    cv.imshow("detectionCanvas", src);
-    src.delete();
-  }, 600);
+// const registerCanvasInterval = () => {
+//   /*
+//   cv.cvtColor = 이미지 흑백화
+//   cv.Canny = 이미지 경계검출
+//   cv.blur = 이미지 블러
+//   cv.imshow = 캔버스 이미지 출력
+//   */
+//   canvasUpdateInterval = setInterval(() => {
+//     const src = cv.imread(imageContainer);
+//     const rsize = new cv.Size(sandboxWidth, sandboxHeight);
+//     const ksize = new cv.Size(10, 10);
+//     const anchor = new cv.Point(-1, -1);
+//     cv.resize(src, src, rsize, 0, 0, cv.INTER_AREA);
+//     cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+//     cv.Canny(src, src, 30, 100, 5, false);
+//     cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
+//     cv.imshow("detectionCanvas", src);
+//     src.delete();
+//   }, 600);
+// };
+
+const canvasCapture = () => {
+  const src = cv.imread(imageContainer);
+  const rsize = new cv.Size(sandboxWidth, sandboxHeight);
+  const ksize = new cv.Size(10, 10);
+  const anchor = new cv.Point(-1, -1);
+  cv.resize(src, src, rsize, 0, 0, cv.INTER_AREA);
+  cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+  cv.Canny(src, src, 30, 100, 5, false);
+  cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
+  cv.imshow("detectionCanvas", src);
+  src.delete();
 };
 
 // removeCanvasInterval: 영상처리 인터벌을 제거합니다.
-const removeCanvasInterval = () => {
-  clearInterval(canvasUpdateInterval);
-};
+// const removeCanvasInterval = () => {
+//   clearInterval(canvasUpdateInterval);
+// };
 
 // registerCursorSleepTimeout: 커서가 1초동안 움직이지 않으면 소리가 멈추는 timeout을 등록합니다
 const registerCursorSleepTimeout = () => {
@@ -120,21 +133,30 @@ const registerCursorSleepTimeout = () => {
   }, 1000);
 };
 
-const onMessageHandler = (event) => {
+const loadImage = (imageNode, data) => {
+  return new Promise((resolve, reject) => {
+    imageNode.src = data;
+    imageNode.onload = () => resolve(true);
+  });
+};
+
+const onMessageHandler = async (event) => {
   if (event.data[0] == "d") {
-    imageContainer.src = event.data;
-    imageWidth = parseInt(imageContainer.width / 2);
-    imageHeight = parseInt(imageContainer.height / 2);
+    await loadImage(imageContainer, event.data);
+    // ~: bitwise not(이진연산 not을 두번 = 정수형 반환)
+    imageWidth = ~~(imageContainer.width / 2);
+    imageHeight = ~~(imageContainer.height / 2);
+    canvasCapture();
   } else if (imageHeight > 0 && imageWidth > 0) {
     const dataArray = event.data.split("/");
-    const mx = parseInt(dataArray[1]);
-    const my = parseInt(dataArray[2]);
+    const mx = ~~dataArray[1];
+    const my = ~~dataArray[2];
 
     // 브라우저 윈도우에 위치한 마우스 좌표값(mx, my)을
     // 샌드박스에 위치한 마우스 좌표값(cursorX, cursorY)으로 변형
     // ex) my : imageHeight = cursorY : sandboxHeight 와 같은 비례식
-    cursorX = parseInt(mx * (sandboxWidth / imageWidth));
-    cursorY = parseInt(my * (sandboxHeight / imageHeight));
+    cursorX = ~~(mx * (sandboxWidth / imageWidth));
+    cursorY = ~~(my * (sandboxHeight / imageHeight));
     if (cursorX != prevCursorX || cursorY != prevCursorY) {
       setVolume(getBrightness(cursorX, cursorY));
       registerCursorSleepTimeout();
@@ -155,11 +177,11 @@ const removeMessageHandler = () => {
 const launchCycle = () => {
   initializeAudioNode();
   registerMessageHandler();
-  registerCanvasInterval();
+  // registerCanvasInterval();
 };
 
 const abortCycle = () => {
-  removeCanvasInterval();
+  // removeCanvasInterval();
   removeMessageHandler();
 };
 

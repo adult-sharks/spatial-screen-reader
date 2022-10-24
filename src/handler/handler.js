@@ -6,6 +6,7 @@ const sandbox = document.getElementById("sandbox");
 const captureIntervalParam = 600;
 
 var screenCaptureInterval;
+var previousDataUri;
 var cursorX = 0;
 var cursorY = 0;
 
@@ -67,8 +68,10 @@ const captureScreen = async () => {
   const activeTabId = await queryActiveTabId();
   const isValidTab = await checkValidUrlbyId(activeTabId);
   if (isValidTab) {
-    const screenDataUri = await chrome.tabs.captureVisibleTab();
+    screenDataUri = await chrome.tabs.captureVisibleTab();
+    if (previousDataUri === screenDataUri) console.log("got same image");
     postScreen(screenDataUri);
+    previousDataUri = screenDataUri;
   }
 };
 
@@ -116,8 +119,8 @@ const postWindowSize = () => {
 const launchCycle = async () => {
   await setActivityStatus(true);
   await setActivityBadge("on");
-  postWindowSize();
-  startCapture();
+  // postWindowSize();
+  // startCapture();
   sendReadyMessage();
 };
 
@@ -125,7 +128,7 @@ const launchCycle = async () => {
 const abortCycle = async () => {
   await setActivityStatus(false);
   await setActivityBadge("off");
-  stopCapture();
+  // stopCapture();
   closeWindow();
 };
 
@@ -155,6 +158,9 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
     case "abort":
       abortCycle();
+      break;
+    case "contentChange":
+      setTimeout(captureScreen, 200);
       break;
     default:
       break;

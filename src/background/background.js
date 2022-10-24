@@ -1,3 +1,9 @@
+////////////////////
+// local variable //
+////////////////////
+
+let ongoingCycle = false;
+
 ////////////////
 // core logic //
 ////////////////
@@ -111,11 +117,24 @@ const checkValidUrlbyId = async (tabId) => {
     const tab = await chrome.tabs.get(tabId);
     if (tab.url.includes("chrome://")) return false;
     else if (tab.url.includes("chrome-extension://")) return false;
+    else if (!tab.url) return false;
     else return true;
   } catch (err) {
     console.log("check error");
     return false;
   }
+};
+
+const notifyContentChange = async () => {
+  chrome.runtime.sendMessage({ key: "contentChange" });
+};
+
+const setOngoingCycleTrue = () => {
+  ongoingCycle = true;
+  const changeCycleTimeout = setTimeout(() => {
+    ongoingCycle = false;
+    clearTimeout(changeCycleTimeout);
+  }, 600);
 };
 
 /////////////////////
@@ -125,15 +144,18 @@ const checkValidUrlbyId = async (tabId) => {
 // background.js의 launchCycle 입니다
 
 const launchCycle = async () => {
+  if (ongoingCycle === true) return;
+  setOngoingCycleTrue();
   const targetTabId = await queryActiveTabId();
   await setActiveTabId(targetTabId);
 
-  await openHandlerTab();
   if ((await checkValidUrlbyId(targetTabId)) === false) return;
+  await openHandlerTab();
 
   if ((await checkInjection(targetTabId)) === false)
     await injectScript(targetTabId);
   await toggleInjection(targetTabId, "on");
+  notifyContentChange();
 
   console.log("sharks🦈-on");
 };
@@ -155,7 +177,9 @@ const abortCycle = async () => {
 
 const onChangeCycle = async (tabId) => {
   const activityStatus = await getActivityStatus();
-  if (activityStatus == false) return;
+  if (activityStatus === false) return;
+  if (ongoingCycle === true) return;
+  setOngoingCycleTrue();
 
   const priorActiveTabId = await getActiveTabId();
   const targetTabId = tabId;
@@ -170,10 +194,18 @@ const onChangeCycle = async (tabId) => {
 
   if ((await checkInjection(targetTabId)) === false) {
     await injectScript(targetTabId);
+    // console.log("script injected");
   }
   await toggleInjection(targetTabId, "on");
+  notifyContentChange();
 
   console.log("sharks🦈-move");
+};
+
+const onDomChangeCycle = () => {
+  if (ongoingCycle === true) return;
+  setOngoingCycleTrue();
+  notifyContentChange();
 };
 
 ///////////////////////////
@@ -226,6 +258,9 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         .catch((err) => {
           console.error(err);
         });
+      break;
+    case "domChange":
+      onDomChangeCycle();
       break;
     default:
       break;
