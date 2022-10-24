@@ -4,24 +4,24 @@
 
 const sandboxHeight = 700;
 const sandboxWidth = 1000;
-var windowHeight = 0;
-var windowWidth = 0;
+var imageHeight = 0;
+var imageWidth = 0;
 
-var timer;
-var remoteStream;
+var cursorSleepTimeout;
+var canvasUpdateInterval;
 
-var propMouseX;
-var propMouseY;
-var prevMouseX;
-var prevMouseY;
+var cursorX;
+var cursorY;
+var prevCursorX;
+var prevCursorY;
 
 const initialFreq = 100;
 const initialVol = 0;
-const imageContainer = document.getElementById("output");
+const imageContainer = document.getElementById("imageContainer");
+// const imageContainer = new Image();
 
 // web audio api context를 생성합니다
 // audio context는 오디오 노드의 생성과 프로세싱, 디코딩을 담당합니다 (음성과 관련된 모든 것은 context안에서 일어납니다)
-const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
 // oscillator와 gainNode를 생성합니다
@@ -30,101 +30,150 @@ const audioCtx = new AudioContext();
 const oscillator = audioCtx.createOscillator();
 const gainNode = audioCtx.createGain();
 
-// oscillator를 gainNode와 연결하고 audioContext로 출력을 조율한 뒤 음량 발생을 시작합니다
-// audioContext.destination은 음성의 출력 타겟을 말합니다
-oscillator.connect(gainNode);
-gainNode.connect(audioCtx.destination);
-
-// detune 값을 0으로 지정합니다.
-// oscillator를 시작해서 소리 발생을 시작합니다
-oscillator.detune.value = 0;
-oscillator.start(0);
-
-// 오디오와 관련된 파라미터들 (initial volume, initial frequency)를 설정합니다
-// setValueAtTime는 아직 왜 넣었는지 모르겠다...
-gainNode.gain.value = initialVol;
-oscillator.frequency.value = initialFreq;
-gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
-
 ////////////////
 // core logic //
 ////////////////
 
-// setVolume(): 소리의 크기를 결정합니다
+const initializeAudioNode = () => {
+  // oscillator를 gainNode와 연결하고 audioContext로 출력을 조율한 뒤 음량 발생을 시작합니다
+  // audioContext.destination은 음성의 출력 타겟을 말합니다
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+
+  // detune 값을 0으로 지정합니다.
+  // oscillator를 시작해서 소리 발생을 시작합니다
+  oscillator.detune.value = 0;
+  oscillator.start(0);
+
+  // 오디오와 관련된 파라미터들 (initial volume, initial frequency)를 설정합니다
+  gainNode.gain.value = initialVol;
+  oscillator.frequency.value = initialFreq;
+};
+
+// setVolume: 소리의 크기를 결정합니다
 // 커서의 높이 값에 따라 frequency를 증가시키며 커서의 높이 값을 음성으로 전달합니다.
 // exponentialRampToValueAtTime(도달 값, 도달 목표 시간) - 시간에 따라 소리를 지수적(u자형 커브)으로 증가시킵니다
 // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
-const setVolume = (param, my) => {
-  // oscillator.frequency.value = initialFreq + 50 * (my / sandboxHeight);
+const setVolume = (param) => {
   gainNode.gain.exponentialRampToValueAtTime(
-    param / 100,
+    param / 150,
     audioCtx.currentTime + 0.1
   );
 };
 
-// getCoordinateData(): 커서의 위치에 따라 소리 파라미터를 생성합니다
-const getCoordinateData = (mouseX, mouseY) => {
-  const detectionCanvas = document.getElementById("edgeDetectionCanvas");
-  const detectionCanvasContext = detectionCanvas.getContext("2d");
+// getBrightness: 커서의 위치에 따라 소리 파라미터를 반환합니다
+const getBrightness = (mouseX, mouseY) => {
+  const detectionCanvas = document.getElementById("detectionCanvas");
+  const detectionCanvasContext = detectionCanvas.getContext("2d", {
+    willReadFrequently: true,
+  });
 
   // 캔버스 상의 이미지로부터 주어진 좌표 값의 값을 추출합니다
   // getImageData(x좌표, y좌표, 가로 영역 크기(px), 세로 영역 크기(px))
-  // my : 마우스 위치를 위로 이동시켜 커서의 영향을 받지 않도록 함
-  const mx = mouseX;
-  // const my = mouseY;
-  const my = mouseY - 50 >= 0 ? mouseY - 50 : 0;
-  const p = detectionCanvasContext.getImageData(mx, my, 1, 1).data;
+  const brightnessArray = detectionCanvasContext.getImageData(
+    mouseX,
+    mouseY,
+    1,
+    1
+  ).data;
 
   // brightness가 존재하지 않으면 1로 값을 지정
-  const brightness = p[0] ? p[0] : 1;
-
+  // 디버깅용 콘솔 출력
+  const brightness = brightnessArray[0] ? brightnessArray[0] : 1;
   console.log(mouseX + ", " + mouseY + " => " + brightness);
-  clearTimeout(timer);
-  timer = setTimeout(() => {
-    setVolume(1, mouseY);
-  }, 1000);
 
-  setVolume(brightness, mouseY);
+  return brightness;
 };
 
-const updateCanvas = setInterval(() => {
-  const src = cv.imread(imageContainer);
-  let ksize = new cv.Size(10, 10);
-  let anchor = new cv.Point(-1, -1);
-  cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
-  cv.Canny(src, src, 30, 100, 5, false);
-  cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
-  cv.imshow("edgeDetectionCanvas", src);
-  src.delete();
-}, 10);
+// registerCanvasInterval: 일정한 간격에 따라 imageContainer의 내용을 읽어 영상처리를 하는 인터벌을 등록합니다.
+const registerCanvasInterval = () => {
+  /* 
+  cv.cvtColor = 이미지 흑백화
+  cv.Canny = 이미지 경계검출
+  cv.blur = 이미지 블러
+  cv.imshow = 캔버스 이미지 출력
+  */
+  canvasUpdateInterval = setInterval(() => {
+    const src = cv.imread(imageContainer);
+    const rsize = new cv.Size(sandboxWidth, sandboxHeight);
+    const ksize = new cv.Size(10, 10);
+    const anchor = new cv.Point(-1, -1);
+    cv.resize(src, src, rsize, 0, 0, cv.INTER_AREA);
+    cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+    cv.Canny(src, src, 30, 100, 5, false);
+    cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
+    cv.imshow("detectionCanvas", src);
+    src.delete();
+  }, 600);
+};
+
+// removeCanvasInterval: 영상처리 인터벌을 제거합니다.
+const removeCanvasInterval = () => {
+  clearInterval(canvasUpdateInterval);
+};
+
+// registerCursorSleepTimeout: 커서가 1초동안 움직이지 않으면 소리가 멈추는 timeout을 등록합니다
+const registerCursorSleepTimeout = () => {
+  clearTimeout(cursorSleepTimeout);
+  cursorSleepTimeout = setTimeout(() => {
+    setVolume(1);
+  }, 1000);
+};
+
+const onMessageHandler = (event) => {
+  if (event.data[0] == "d") {
+    imageContainer.src = event.data;
+    imageWidth = parseInt(imageContainer.width / 2);
+    imageHeight = parseInt(imageContainer.height / 2);
+  } else if (imageHeight > 0 && imageWidth > 0) {
+    const dataArray = event.data.split("/");
+    const mx = parseInt(dataArray[1]);
+    const my = parseInt(dataArray[2]);
+
+    // 브라우저 윈도우에 위치한 마우스 좌표값(mx, my)을
+    // 샌드박스에 위치한 마우스 좌표값(cursorX, cursorY)으로 변형
+    // ex) my : imageHeight = cursorY : sandboxHeight 와 같은 비례식
+    cursorX = parseInt(mx * (sandboxWidth / imageWidth));
+    cursorY = parseInt(my * (sandboxHeight / imageHeight));
+    if (cursorX != prevCursorX || cursorY != prevCursorY) {
+      setVolume(getBrightness(cursorX, cursorY));
+      registerCursorSleepTimeout();
+    }
+    prevCursorX = cursorX;
+    prevCursorY = cursorY;
+  }
+};
+
+const registerMessageHandler = () => {
+  window.addEventListener("message", onMessageHandler);
+};
+
+const removeMessageHandler = () => {
+  window.removeEventListener("message", onMessageHandler);
+};
+
+const launchCycle = () => {
+  initializeAudioNode();
+  registerMessageHandler();
+  registerCanvasInterval();
+};
+
+const abortCycle = () => {
+  removeCanvasInterval();
+  removeMessageHandler();
+};
 
 ///////////////////////////
 // window event listners //
 ///////////////////////////
 
-window.addEventListener("message", (event) => {
-  if (event.data[0] == "d") {
-    imageContainer.src = event.data;
-  } else if (event.data[0] == "w") {
-    windowWidth = parseInt(event.data.split("/")[1]);
-    windowHeight = parseInt(event.data.split("/")[2]);
-  } else if (windowHeight > 0 && windowWidth > 0) {
-    let mx = parseInt(event.data.split("/")[0]);
-    let my = parseInt(event.data.split("/")[1]);
+// sandbox.js의 launchCycle 입니다
+// opencv.js가 정상적으로 로드된 뒤 launchCycle을 호출합니다
+cv["onRuntimeInitialized"] = () => {
+  launchCycle();
+};
 
-    // 브라우저 윈도우에 위치한 마우스 좌표값(mx, my)을
-    // 샌드박스에 위치한 마우스 좌표값(propMouseX, propMouseY)으로 변형
-    // ex) my : windowHeight = propMouseY : sandboxHeight 와 같은 비례식
-    propMouseX = ~~(mx * (sandboxWidth / windowWidth));
-    propMouseY = ~~(my * (sandboxHeight / windowHeight));
-    if (propMouseX != prevMouseX || propMouseY != prevMouseY) {
-      getCoordinateData(propMouseX, propMouseY);
-    }
-    prevMouseX = propMouseX;
-    prevMouseY = propMouseY;
-  }
-});
-
-window.addEventListener("load", () => {
-  imageContainer.style.display = "none";
+// sandbox.js의 abortCycle 입니다
+window.addEventListener("beforeunload", () => {
+  abortCycle();
 });

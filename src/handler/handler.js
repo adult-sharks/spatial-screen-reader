@@ -2,33 +2,19 @@
 // local variables //
 /////////////////////
 
-const player = document.getElementById("player");
 const sandbox = document.getElementById("sandbox");
-const streamCanvas = document.createElement("canvas");
-let screenContext;
-let screenStream;
-let screenInterval;
+const captureIntervalParam = 600;
 
-var mouseX = 0;
-var mouseY = 0;
+var screenCaptureInterval;
+var cursorX = 0;
+var cursorY = 0;
 
 ////////////////
 // core logic //
 ////////////////
 
-const getStreamId = async () => {
-  return new Promise((resolve, reject) => {
-    chrome.desktopCapture.chooseDesktopMedia(["window"], (id) => {
-      if (id) {
-        resolve(id);
-      } else {
-        abortCycle();
-        reject();
-      }
-    });
-  });
-};
-
+// setActivityStatus: chrome.storage에 activity 값을 저장합니다
+// status: true | false
 const setActivityStatus = async (status) => {
   if (status === true) {
     await chrome.storage.local.set({ activityStatus: "true" });
@@ -37,50 +23,86 @@ const setActivityStatus = async (status) => {
   }
 };
 
+// setActivityBadge: 확장프로그램 아이콘 값을 수정합니다
+// status: true | false
+const setActivityBadge = async (status) => {
+  if (status === "on") {
+    await chrome.action.setBadgeBackgroundColor({ color: "#e34646" });
+    await chrome.action.setBadgeText({ text: "on" });
+  } else if (status === "off") {
+    await chrome.action.setBadgeBackgroundColor({ color: "#e6e6e6" });
+    await chrome.action.setBadgeText({ text: "off" });
+  }
+};
+
+// sendReadyMessage: background.js에 준비되었음을 전달합니다
 const sendReadyMessage = async () => {
   chrome.runtime.sendMessage({ key: "handlerReady" });
 };
 
-const startCapture = async () => {
-  const streamId = await getStreamId();
-  screenStream = await navigator.mediaDevices.getUserMedia({
-    audio: false,
-    video: {
-      mandatory: {
-        chromeMediaSource: "desktop",
-        chromeMediaSourceId: streamId,
-      },
-    },
-  });
-  player.srcObject = screenStream;
+// checkValidUrlbyId: URL이 현재 창에서 접근 가능한지 확인합니다
+const checkValidUrlbyId = async (tabId) => {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (tab.url.includes("chrome://")) return false;
+    else if (tab.url.includes("chrome-extension://")) return false;
+    else return true;
+  } catch (err) {
+    console.log("check error");
+    return false;
+  }
 };
 
+// queryActiveTabId: chrome.tabs를 이용해 현재 활성화된 탭의 아이디(tabId)를 반환합니다
+const queryActiveTabId = async () => {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tabs.length > 0) return tabs[0].id;
+  else return new Error("Cannot parse active tab");
+};
+
+// captureScreen: 활성화된 tab의 영역을 캡쳐합니다
+// 탭을 이동하는 중에는 chrome.tabs가 비활성화 되므로 이를 확인합니다
+// captureVisibleTab은 화면의 dataURI를 생성합니다
+const captureScreen = async () => {
+  const activeTabId = await queryActiveTabId();
+  const isValidTab = await checkValidUrlbyId(activeTabId);
+  if (isValidTab) {
+    const screenDataUri = await chrome.tabs.captureVisibleTab();
+    postScreen(screenDataUri);
+  }
+};
+
+// postScreen: dataURI로 전달받은 화면 이미지를 sandbox로 전달합니다
+const postScreen = (screenDataUri) => {
+  sandbox.contentWindow.postMessage(screenDataUri, "*");
+};
+
+// startCapture: 일정한 간격으로 captureScreen을 호출하는 인터벌을 등록합니다
+const startCapture = () => {
+  screenCaptureInterval = setInterval(captureScreen, captureIntervalParam);
+};
+
+// stopCapture: captureScreen 호출 인터벌을 제거합니다
 const stopCapture = async () => {
-  if (screenStream !== null) {
-    screenStream.getTracks().forEach((track) => track.stop());
-    screenStream = null;
-    player.srcObject = null;
-    player.pause();
-  }
+  clearInterval(screenCaptureInterval);
 };
 
-const setActivityBadge = (status) => {
-  if (status === "on") {
-    chrome.action.setBadgeBackgroundColor({ color: "#e34646" });
-    chrome.action.setBadgeText({ text: "on" });
-  } else if (status === "off") {
-    chrome.action.setBadgeBackgroundColor({ color: "#e6e6e6" });
-    chrome.action.setBadgeText({ text: "off" });
-  }
-};
-
+// closeWindow: 현재 창을 닫습니다
 const closeWindow = () => {
   window.close();
 };
 
-const setSandboxStreamInterval = () => {
-  streamCanvas.height = screenStream.getVideoTracks()[0].getSettings().height;
-  streamCanvas.width = screenStream.getVideoTracks()[0].getSettings().width;
+// postCursorCoordinate: chrome.storage에 저장된 커서 좌표를 sandbox에 전달합니다
+const postCursorCoordinate = async () => {
+  const { cursorX, cursorY } = await chrome.storage.local.get([
+    "cursorX",
+    "cursorY",
+  ]);
+  sandbox.contentWindow.postMessage("cursor/" + cursorX + "/" + cursorY, "*");
+};
+
+// postWindowSize: 현재 창의 윈도우 내부 크기를 sandbox에 전달합니다
+const postWindowSize = () => {
   const windowWidth = window.innerWidth;
   const windowHeight = window.innerHeight;
 
@@ -88,40 +110,23 @@ const setSandboxStreamInterval = () => {
     "window/" + windowWidth + "/" + windowHeight,
     "*"
   );
-  screenInterval = setInterval(() => {
-    screenContext = streamCanvas.getContext("2d");
-    screenContext.drawImage(player, 0, 0);
-    const base64 = streamCanvas.toDataURL();
-    sandbox.contentWindow.postMessage(base64, "*");
-  }, 10);
 };
 
-const clearSandboxStreamInterval = () => {
-  clearInterval(screenInterval);
-};
-
+// handler.js의 launchCycle 입니다
 const launchCycle = async () => {
   await setActivityStatus(true);
-  setActivityBadge("on");
-  await startCapture();
-  await sendReadyMessage();
-  setSandboxStreamInterval();
+  await setActivityBadge("on");
+  postWindowSize();
+  startCapture();
+  sendReadyMessage();
 };
 
+// handler.js의 abortCycle 입니다
 const abortCycle = async () => {
   await setActivityStatus(false);
-  setActivityBadge("off");
-  clearSandboxStreamInterval();
-  await stopCapture();
+  await setActivityBadge("off");
+  stopCapture();
   closeWindow();
-};
-
-const getCoordinateData = async () => {
-  const { mouseX, mouseY } = await chrome.storage.local.get([
-    "mouseX",
-    "mouseY",
-  ]);
-  sandbox.contentWindow.postMessage(mouseX + "/" + mouseY, "*");
 };
 
 ///////////////////////////
@@ -130,17 +135,22 @@ const getCoordinateData = async () => {
 
 window.addEventListener("load", function () {
   launchCycle();
-  chrome.storage.onChanged.addListener(getCoordinateData);
 });
 
 window.addEventListener("beforeunload", () => {
   abortCycle();
 });
 
+// [[이슈]] 변화하는 윈도우 사이즈에 대한 대응이 필요함
+// window.addEventListener("resize", () => {
+//   postWindowSize();
+// });
+
 ///////////////////////////
 // chrome event listners //
 ///////////////////////////
 
+// 종료 메시지 발생 시 abortCycle을 호출합니다
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
     case "abort":
@@ -150,3 +160,6 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       break;
   }
 });
+
+// storage에 변경이 발생 시 postCursorCoordinate 함수를 호출합니다
+chrome.storage.onChanged.addListener(postCursorCoordinate);

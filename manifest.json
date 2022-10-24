@@ -25,7 +25,9 @@
     "storage",
     "alarms",
     "scripting",
-    "desktopCapture" 
+    "desktopCapture",
+    "tabCapture",
+    "activeTab"
   ],
   "host_permissions": [
     "<all_urls>"
