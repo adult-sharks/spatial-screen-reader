@@ -2,3 +2,6 @@
 .DS_STORE
 .DS_Store
 asset/.DS_Store
+dist
+node_modules
+.env
