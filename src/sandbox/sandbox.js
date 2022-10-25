@@ -56,10 +56,14 @@ const initializeAudioNode = () => {
 // exponentialRampToValueAtTime(도달 값, 도달 목표 시간) - 시간에 따라 소리를 지수적(u자형 커브)으로 증가시킵니다
 // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
 const setVolume = (param, delay) => {
-  gainNode.gain.exponentialRampToValueAtTime(
-    param / 150,
-    audioCtx.currentTime + delay
-  );
+  if (param === 0) {
+    gainNode.gain.linearRampToValueAtTime(param, audioCtx.currentTime + delay);
+  } else {
+    gainNode.gain.exponentialRampToValueAtTime(
+      param / 150,
+      audioCtx.currentTime + delay
+    );
+  }
 };
 
 // getBrightness: 커서의 위치에 따라 소리 파라미터를 반환합니다
@@ -80,7 +84,7 @@ const getBrightness = (mouseX, mouseY) => {
 
   // brightness가 존재하지 않으면 1로 값을 지정
   // 디버깅용 콘솔 출력
-  const brightness = brightnessArray[0] ? brightnessArray[0] : 1;
+  const brightness = brightnessArray[0] ? brightnessArray[0] : 0;
   // console.log(mouseX + ", " + mouseY + " => " + brightness);
 
   return brightness;
@@ -109,7 +113,7 @@ const canvasCapture = () => {
 const registerCursorSleepTimeout = () => {
   clearTimeout(cursorSleepTimeout);
   cursorSleepTimeout = setTimeout(() => {
-    setVolume(1, 0.5);
+    setVolume(0, 0.5);
   }, 500);
 };
 
