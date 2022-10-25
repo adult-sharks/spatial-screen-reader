@@ -35,8 +35,8 @@
   "dependencies": {
     "@babel/eslint-parser": "^7.19.1",
     "@babel/runtime": "^7.19.4",
-    "@techstark/opencv-js": "^4.6.0-release.1",
     "eslint-config-prettier": "^8.5.0",
+    "gammacv": "^0.5.2",
     "prettier": "^2.7.1"
   }
 }
