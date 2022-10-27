@@ -1,5 +1,4 @@
-// import cv from '@techstark/opencv-js';
-import * as gm from 'gammacv';
+import cv from '@techstark/opencv-js';
 
 /////////////////////
 // local variables //
@@ -22,7 +21,6 @@ var prevCursorY;
 const initialFreq = 150;
 const initialVol = 0;
 const imageContainer = document.getElementById('imageContainer');
-const detectionCanvas = document.getElementById('detectionCanvas');
 // const imageContainer = new Image();
 
 // web audio api context를 생성합니다
@@ -72,6 +70,7 @@ const setVolume = (param, delay) => {
 
 // getBrightness: 커서의 위치에 따라 소리 파라미터를 반환합니다
 const getBrightness = (mouseX, mouseY) => {
+  const detectionCanvas = document.getElementById('detectionCanvas');
   const detectionCanvasContext = detectionCanvas.getContext('2d', {
     willReadFrequently: true,
   });
@@ -93,47 +92,23 @@ const getBrightness = (mouseX, mouseY) => {
   return brightness;
 };
 
-// const canvasCapture = () => {
-//   /*
-//   cv.cvtColor = 이미지 흑백화
-//   cv.Canny = 이미지 경계검출
-//   cv.blur = 이미지 블러
-//   cv.imshow = 캔버스 이미지 출력
-//   */
-//   console.time('imageOperation');
-//   const src = cv.imread(imageContainer);
-//   const rsize = new cv.Size(sandboxWidth, sandboxHeight);
-//   const ksize = new cv.Size(10, 10);
-//   const anchor = new cv.Point(-1, -1);
-//   cv.resize(src, src, rsize, 0, 0, cv.INTER_AREA);
-//   cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
-//   cv.Canny(src, src, 30, 100, 5, false);
-//   cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
-//   cv.imshow('detectionCanvas', src);
-//   src.delete();
-//   console.timeEnd('imageOperation');
-// };
-
-const processImage = async (base64Data, width, height) => {
-  const imageTensor = await gm.imageTensorFromURL(
-    base64Data,
-    'uint8',
-    [height, width, 4],
-    true,
-  );
-  let pipeline = imageTensor;
-
-  pipeline = gm.resize(pipeline, sandboxWidth, sandboxHeight, 'bicubic');
-  pipeline = gm.grayscale(pipeline);
-  pipeline = gm.cannyEdges(pipeline, 0.25, 0.75);
-  pipeline = gm.gaussianBlur(pipeline, 10, 10);
-  const imageRes = gm.tensorFrom(pipeline);
-
-  const sess = new gm.Session();
-  sess.init(pipeline);
-  sess.runOp(pipeline, 0, imageRes);
-
-  gm.canvasFromTensor(detectionCanvas, imageRes);
+const canvasCapture = () => {
+  /*
+  cv.cvtColor = 이미지 흑백화
+  cv.Canny = 이미지 경계검출
+  cv.blur = 이미지 블러
+  cv.imshow = 캔버스 이미지 출력
+  */
+  const src = cv.imread(imageContainer);
+  const rsize = new cv.Size(sandboxWidth, sandboxHeight);
+  const ksize = new cv.Size(10, 10);
+  const anchor = new cv.Point(-1, -1);
+  cv.resize(src, src, rsize, 0, 0, cv.INTER_AREA);
+  cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+  cv.Canny(src, src, 30, 100, 5, false);
+  cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
+  cv.imshow('detectionCanvas', src);
+  src.delete();
 };
 
 // registerCursorSleepTimeout: 커서가 1초동안 움직이지 않으면 소리가 멈추는 timeout을 등록합니다
@@ -157,8 +132,7 @@ const onMessageHandler = async (event) => {
     // ~: bitwise not(이진연산 not을 두번 = 정수형 반환)
     imageWidth = ~~(imageContainer.width / pixelRatio);
     imageHeight = ~~(imageContainer.height / pixelRatio);
-    // canvasCapture();
-    processImage(event.data, imageContainer.width, imageContainer.height);
+    canvasCapture();
   } else if (imageHeight > 0 && imageWidth > 0) {
     const dataArray = event.data.split('/');
     const mx = ~~dataArray[1];
@@ -201,10 +175,9 @@ const abortCycle = () => {
 
 // sandbox.js의 launchCycle 입니다
 // opencv.js가 정상적으로 로드된 뒤 launchCycle을 호출합니다
-
-window.addEventListener('DOMContentLoaded', () => {
+cv['onRuntimeInitialized'] = () => {
   launchCycle();
-});
+};
 
 // sandbox.js의 abortCycle 입니다
 window.addEventListener('beforeunload', () => {

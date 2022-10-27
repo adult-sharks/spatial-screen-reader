@@ -42,6 +42,7 @@ function speak(text, opt_prop) {
 // hover 했을 때 last element 의 text 내용을 불러옵니다.
 const extractTextFromTree = (nodeTree) => {
   let text = '';
+  let type = '';
   let element = nodeTree[0];
   // 공백 체크
   if (element == undefined) {
@@ -51,24 +52,23 @@ const extractTextFromTree = (nodeTree) => {
   switch (element.nodeName) {
     case 'IMG':
     case 'SVG':
-      text += 'image ';
+      type += 'image ';
       break;
     case 'INPUT':
-      text += 'input ';
+      type += 'input ';
       break;
   }
 
   // 클릭 가능 여부 체크
   if (element.getAttribute('onclick') !== null) {
-    text += 'button ';
+    type += 'button ';
   }
   if (element.getAttribute('href') !== null) {
-    text += 'link ';
+    type += 'link ';
   }
-
   // 문자열 데이터 추출
-  // 최하위 노드부터 0개 상위 노드를 탐색
-  for (let i = 0; i < 1; i++) {
+  // 최하위 노드부터 1개 상위 노드를 탐색
+  for (let i = 0; i < 2; i++) {
     element = nodeTree[i];
 
     if (element.textContent != '') {
@@ -80,10 +80,12 @@ const extractTextFromTree = (nodeTree) => {
     if (element.getAttribute('alt')) {
       text += element.getAttribute('alt');
     }
+    if (text.length > 0) break;
   }
   // 텍스트 디버그
   // console.log(text);
-  return text;
+  console.log(type + ' ' + text);
+  return type + ' ' + text;
 };
 
 // ==== Cursor function ==== //
@@ -115,7 +117,7 @@ async function onCursorMove(e) {
   clearTimeout(readTimeout);
   readTimeout = setTimeout(() => {
     const text = extractTextFromTree(e.path);
-    // speak(text, { rate: 1.0, pitch: 1.0 });
+    speak(text, { rate: 1.0, pitch: 1.0 });
   }, readTimeParam);
 }
 
@@ -129,7 +131,7 @@ function onTouch(e) {
       doneFirstTouch = false;
     }, 300);
     const text = extractTextFromTree(e.path);
-    // speak(text, { rate: 1.0, pitch: 1.0 });
+    speak(text, { rate: 1.0, pitch: 1.0 });
   } else {
     // 두번째 클릭하는 경우
     if (window.speechSynthesis.speaking) {
@@ -139,7 +141,7 @@ function onTouch(e) {
     for (let i = 0; i < e.path.length; i++) {
       if (e.path[i].href) {
         window.location.href = e.path[i].href;
-        // speak("이동", { rate: 1.0, pitch: 1.0 });
+        speak('이동', { rate: 1.0, pitch: 1.0 });
         break;
       }
     }
