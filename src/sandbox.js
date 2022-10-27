@@ -18,7 +18,7 @@ var cursorY;
 var prevCursorX;
 var prevCursorY;
 
-const initialFreq = 150;
+const initialFreq = 50;
 const initialVol = 0;
 const imageContainer = document.getElementById('imageContainer');
 // const imageContainer = new Image();
@@ -36,6 +36,17 @@ const gainNode = audioCtx.createGain();
 ////////////////
 // core logic //
 ////////////////
+
+function speak(text, opt_prop) {
+  // if reading, cancel TTS
+  window.speechSynthesis.cancel();
+  const speechContext = new SpeechSynthesisUtterance();
+  speechContext.rate = 1;
+  speechContext.lang = 'ko-KR';
+  speechContext.pitch = 1;
+  speechContext.text = text;
+  window.speechSynthesis.speak(speechContext);
+}
 
 const initializeAudioNode = () => {
   // oscillator를 gainNode와 연결하고 audioContext로 출력을 조율한 뒤 음량 발생을 시작합니다
@@ -87,7 +98,7 @@ const getBrightness = (mouseX, mouseY) => {
   // brightness가 존재하지 않으면 1로 값을 지정
   // 디버깅용 콘솔 출력
   const brightness = brightnessArray[0] ? brightnessArray[0] : 0;
-  // console.log(mouseX + ", " + mouseY + " => " + brightness);
+  // console.log(mouseX + ', ' + mouseY + ' => ' + brightness);
 
   return brightness;
 };
@@ -99,16 +110,40 @@ const canvasCapture = () => {
   cv.blur = 이미지 블러
   cv.imshow = 캔버스 이미지 출력
   */
+  console.time('time');
   const src = cv.imread(imageContainer);
-  const rsize = new cv.Size(sandboxWidth, sandboxHeight);
   const ksize = new cv.Size(10, 10);
   const anchor = new cv.Point(-1, -1);
-  cv.resize(src, src, rsize, 0, 0, cv.INTER_AREA);
+  const countMat = new cv.Mat();
+  let contours = new cv.MatVector();
+  let hierarchy = new cv.Mat();
+  const M = cv.Mat.ones(15, 15, cv.CV_8U);
+
   cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
-  cv.Canny(src, src, 30, 100, 5, false);
-  cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
-  cv.imshow('detectionCanvas', src);
+  cv.threshold(src, countMat, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+  cv.dilate(
+    countMat,
+    countMat,
+    M,
+    anchor,
+    1,
+    cv.BORDER_CONSTANT,
+    cv.morphologyDefaultBorderValue(),
+  );
+  cv.findContours(
+    countMat,
+    contours,
+    hierarchy,
+    cv.RETR_CCOMP,
+    cv.CHAIN_APPROX_SIMPLE,
+  );
+  speak(contours.size());
+  cv.blur(countMat, countMat, ksize, anchor, cv.BORDER_DEFAULT);
+  console.log(contours);
+  cv.imshow('detectionCanvas', countMat);
+  console.timeEnd('time');
   src.delete();
+  countMat.delete();
 };
 
 // registerCursorSleepTimeout: 커서가 1초동안 움직이지 않으면 소리가 멈추는 timeout을 등록합니다
@@ -127,11 +162,12 @@ const loadImage = (imageNode, data) => {
 };
 
 const onMessageHandler = async (event) => {
-  if (event.data[0] == 'd') {
-    await loadImage(imageContainer, event.data);
+  if (event.data[0] == 'i') {
+    const dataArray = event.data.split('-');
     // ~: bitwise not(이진연산 not을 두번 = 정수형 반환)
-    imageWidth = ~~(imageContainer.width / pixelRatio);
-    imageHeight = ~~(imageContainer.height / pixelRatio);
+    imageWidth = ~~(dataArray[1] / pixelRatio);
+    imageHeight = ~~(dataArray[2] / pixelRatio);
+    await loadImage(imageContainer, dataArray[3]);
     canvasCapture();
   } else if (imageHeight > 0 && imageWidth > 0) {
     const dataArray = event.data.split('/');

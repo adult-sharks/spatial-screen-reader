@@ -84,7 +84,6 @@ const extractTextFromTree = (nodeTree) => {
   }
   // 텍스트 디버그
   // console.log(text);
-  console.log(type + ' ' + text);
   return type + ' ' + text;
 };
 
@@ -122,27 +121,29 @@ async function onCursorMove(e) {
 }
 
 function onTouch(e) {
-  e.preventDefault();
-  e.stopImmediatePropagation();
-  if (!doneFirstTouch) {
-    // 첫번째 클릭하는 경우
-    doneFirstTouch = true;
-    setTimeout(() => {
+  if (e.touches.length <= 1) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (!doneFirstTouch) {
+      // 첫번째 클릭하는 경우
+      doneFirstTouch = true;
+      setTimeout(() => {
+        doneFirstTouch = false;
+      }, 300);
+      const text = extractTextFromTree(e.path);
+      speak(text, { rate: 1.0, pitch: 1.0 });
+    } else {
+      // 두번째 클릭하는 경우
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
       doneFirstTouch = false;
-    }, 300);
-    const text = extractTextFromTree(e.path);
-    speak(text, { rate: 1.0, pitch: 1.0 });
-  } else {
-    // 두번째 클릭하는 경우
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
-    }
-    doneFirstTouch = false;
-    for (let i = 0; i < e.path.length; i++) {
-      if (e.path[i].href) {
-        window.location.href = e.path[i].href;
-        speak('이동', { rate: 1.0, pitch: 1.0 });
-        break;
+      for (let i = 0; i < e.path.length; i++) {
+        if (e.path[i].href) {
+          window.location.href = e.path[i].href;
+          speak('이동', { rate: 1.0, pitch: 1.0 });
+          break;
+        }
       }
     }
   }
@@ -173,12 +174,14 @@ function haltDomObserver() {
 }
 
 function onDoubleClick(e) {
-  e.preventDefault();
-  const nodeTree = e.path;
-  for (let i = 0; i < nodeTree.length; i++) {
-    if (nodeTree[i].href) {
-      window.location.href = nodeTree[i].href;
-      break;
+  if (e.touches.length <= 1) {
+    e.preventDefault();
+    const nodeTree = e.path;
+    for (let i = 0; i < nodeTree.length; i++) {
+      if (nodeTree[i].href) {
+        window.location.href = nodeTree[i].href;
+        break;
+      }
     }
   }
 }
