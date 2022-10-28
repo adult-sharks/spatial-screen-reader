@@ -65,7 +65,6 @@ const queryActiveTabId = async () => {
 // 탭을 이동하는 중에는 chrome.tabs가 비활성화 되므로 이를 확인합니다
 // captureVisibleTab은 화면의 dataURI를 생성합니다
 const captureScreen = async () => {
-  console.time('capture');
   const activeTabId = await queryActiveTabId();
   const isValidTab = await checkValidUrlbyId(activeTabId);
   if (isValidTab) {
@@ -74,7 +73,6 @@ const captureScreen = async () => {
     if (previousDataUri !== compressedDataUri) postScreen(compressedDataUri);
     previousDataUri = compressedDataUri;
   }
-  console.timeEnd('capture');
 };
 
 const resizeDataUri = (datas, width, height) => {

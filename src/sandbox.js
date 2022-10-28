@@ -110,7 +110,6 @@ const canvasCapture = () => {
   cv.blur = 이미지 블러
   cv.imshow = 캔버스 이미지 출력
   */
-  console.time('time');
   const src = cv.imread(imageContainer);
   const ksize = new cv.Size(10, 10);
   const anchor = new cv.Point(-1, -1);
@@ -120,7 +119,7 @@ const canvasCapture = () => {
   const M = cv.Mat.ones(15, 15, cv.CV_8U);
 
   cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
-  cv.threshold(src, countMat, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+  cv.threshold(src, countMat, 0, 255, cv.THRESH_OTSU + cv.THRESH_BINARY_INV);
   cv.dilate(
     countMat,
     countMat,
@@ -138,10 +137,9 @@ const canvasCapture = () => {
     cv.CHAIN_APPROX_SIMPLE,
   );
   speak(contours.size());
-  cv.blur(countMat, countMat, ksize, anchor, cv.BORDER_DEFAULT);
-  console.log(contours);
-  cv.imshow('detectionCanvas', countMat);
-  console.timeEnd('time');
+  cv.Canny(src, src, 30, 100, 5, false);
+  cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
+  cv.imshow('detectionCanvas', src);
   src.delete();
   countMat.delete();
 };
