@@ -37,6 +37,7 @@
     "@babel/runtime": "^7.19.4",
     "@techstark/opencv-js": "^4.6.0-release.1",
     "eslint-config-prettier": "^8.5.0",
+    "json-schema-traverse": "^1.0.0",
     "lz-string": "^1.4.4",
     "prettier": "^2.7.1"
   }
