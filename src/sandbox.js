@@ -136,7 +136,7 @@ const canvasCapture = () => {
     cv.RETR_CCOMP,
     cv.CHAIN_APPROX_SIMPLE,
   );
-  speak(contours.size());
+  // speak(contours.size());
   cv.Canny(src, src, 30, 100, 5, false);
   cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
   cv.imshow('detectionCanvas', src);

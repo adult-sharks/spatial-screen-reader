@@ -6,11 +6,11 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   entry: {
-    background: './src/background.js',
-    handler: './src/handler.js',
-    inject: './src/inject.js',
-    popup: './src/popup.js',
-    sandbox: './src/sandbox.js',
+    background: '/src/background.js',
+    handler: '/src/handler.js',
+    inject: '/src/inject.js',
+    popup: '/src/popup.js',
+    sandbox: '/src/sandbox.js',
   },
   module: {
     rules: [
