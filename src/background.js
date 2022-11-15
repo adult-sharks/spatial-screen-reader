@@ -183,7 +183,7 @@ const setOngoingCycleTrue = () => {
 
 /**
  * 사용자가 프로그램을 토글할 시 발생하는 launchCycle 입니다
- * @returns {undefined} undefined - escape return
+ * @returns {undefined} undefined - Escape return
  */
 const launchCycle = async () => {
   /// 진행중인 600ms timeout이 존재하면 실행을 멈춥니다
@@ -208,11 +208,12 @@ const launchCycle = async () => {
   console.log('sharks🦈-on');
 };
 
-// background.js의 abortCycle 입니다
-
 /**
  * background.js가 종료될 때 호출되는 사이클입니다
- * @returns {undefined} undefined - escape return
+ * [1] 활성화 탭 id를 불러옵니다
+ * [2] 핸들러 탭을 종료합니다
+ * [3] 활성화 탭에 종료 메시지를 전달합니다
+ * @returns {undefined} undefined - Escape return
  */
 const abortCycle = async () => {
   /// 활성화 탭 아이디를 불러옵니다
@@ -229,12 +230,13 @@ const abortCycle = async () => {
 /**
  * 사용자 화면 변경(탭 변경, 페이지 리프레시)이 발생할 때 호출되는 사이클 함수입니다
  * @param {string} tabId - Active tab id
- * @returns {undefined} undefined - escape return
+ * @returns {undefined} undefined - Escape return
  */
 const onChangeCycle = async (tabId) => {
   /// 현재 활성화 상태를 조회합니다
   const activityStatus = await getActivityStatus();
   if (activityStatus === false) return;
+
   /// 진행중인 DomChangeCycle이 있는 지 확인합니다
   if (ongoingCycle === true) return;
   setOngoingCycleTrue();
@@ -263,7 +265,7 @@ const onChangeCycle = async (tabId) => {
 
 /**
  * 사용자 화면의 DOM이 변경되었을 때 발생하는 onDomChangeCycle입니다
- * @returns {undefined} undefined - escape return
+ * @returns {undefined} undefined - Escape return
  */
 const onDomChangeCycle = () => {
   if (ongoingCycle === true) return;
