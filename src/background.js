@@ -208,10 +208,11 @@ const launchCycle = async () => {
   console.log('sharks🦈-on');
 };
 
-// background.js의 abortCycle 입니다
-
 /**
  * background.js가 종료될 때 호출되는 사이클입니다
+ * [1] 활성화 탭 id를 불러옵니다
+ * [2] 핸들러 탭을 종료합니다
+ * [3] 활성화 탭에 종료 메시지를 전달합니다
  * @returns {undefined} undefined - Escape return
  */
 const abortCycle = async () => {
@@ -235,6 +236,7 @@ const onChangeCycle = async (tabId) => {
   /// 현재 활성화 상태를 조회합니다
   const activityStatus = await getActivityStatus();
   if (activityStatus === false) return;
+
   /// 진행중인 DomChangeCycle이 있는 지 확인합니다
   if (ongoingCycle === true) return;
   setOngoingCycleTrue();

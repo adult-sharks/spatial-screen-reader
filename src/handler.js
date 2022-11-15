@@ -107,7 +107,7 @@ const captureScreen = async () => {
 };
 
 /**
- * Data uri를 압축합니다
+ * 입력 크기를 기준으로 이미지 data uri를 압축합니다
  * @param {string} data - input data uri
  * @param {*} width - width of output image
  * @param {*} height - height of output image
