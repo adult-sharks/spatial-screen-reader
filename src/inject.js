@@ -46,12 +46,12 @@ function startSpeech(text, prop) {
   abortSpeech();
 
   const language = koreaRegex.test(text) ? 'ko-KR' : 'en-US';
-  const speechSynth = new SpeechSynthesisUtterance();
-  speechSynth.rate = prop.rate || 1;
-  speechSynth.pitch = prop.pitch || 1;
-  speechSynth.lang = language;
-  speechSynth.text = text;
-  window.speechSynthesis.speak(speechSynth);
+  const speechContext = new SpeechSynthesisUtterance();
+  speechContext.rate = prop.rate || 1;
+  speechContext.pitch = prop.pitch || 1;
+  speechContext.lang = language;
+  speechContext.text = text;
+  window.speechSynthesis.startSpeech(speechContext);
 }
 
 /**
@@ -115,7 +115,6 @@ const extractTextFromTree = (nodeTree) => {
   }
   // [DEBUG] 텍스트 디버깅용 출력
   // console.log(text);
-  console.log('text is: ' + type + text);
   return type + ' ' + text;
 };
 
@@ -157,11 +156,16 @@ async function onCursorMove(e) {
   /// 커서 위치를 저장합니다
   await saveCursorPosition(e.clientX, e.clientY);
 
+  // 음성 저장
+
   /// Timeout을 삭제하고 새로운 Timeout을 등록합니다
   clearTimeout(readTimeout);
   readTimeout = setTimeout(() => {
     const text = extractTextFromTree(e.path);
-    startSpeech(text, { rate: 1.0, pitch: 1.0 });
+    chrome.runtime.sendMessage({
+      key: 'onTextExtract',
+      content: text,
+    });
   }, readTimeParam);
 }
 

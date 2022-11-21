@@ -214,6 +214,10 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     case 'contentChange':
       setTimeout(captureScreen, 200);
       break;
+    case 'onTextExtract':
+      console.log(message.content);
+      sandbox.contentWindow.postMessage('text/' + message.content, '*');
+      break;
     default:
       break;
   }
