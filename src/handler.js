@@ -22,6 +22,7 @@ var cursorY = 0;
  * @param {boolean} status - Chrome extension status
  */
 const setActivityStatus = async (status) => {
+  console.log('toggled');
   if (status === true) {
     await chrome.storage.local.set({ activityStatus: 'true' });
   } else if (status === false) {
@@ -39,10 +40,10 @@ const setActivityStatus = async (status) => {
 const setActivityBadge = async (status) => {
   if (status === true) {
     await chrome.action.setBadgeBackgroundColor({ color: '#e34646' });
-    await chrome.action.setBadgeText({ text: true });
+    await chrome.action.setBadgeText({ text: 'on' });
   } else if (status === false) {
     await chrome.action.setBadgeBackgroundColor({ color: '#e6e6e6' });
-    await chrome.action.setBadgeText({ text: false });
+    await chrome.action.setBadgeText({ text: 'off' });
   }
 };
 

@@ -46,12 +46,12 @@ function startSpeech(text, prop) {
   abortSpeech();
 
   const language = koreaRegex.test(text) ? 'ko-KR' : 'en-US';
-  const speechContext = new SpeechSynthesisUtterance();
-  speechContext.rate = prop.rate || 1;
-  speechContext.pitch = prop.pitch || 1;
-  speechContext.lang = language;
-  speechContext.text = text;
-  window.speechSynthesis.startSpeech(speechContext);
+  const speechSynth = new SpeechSynthesisUtterance();
+  speechSynth.rate = prop.rate || 1;
+  speechSynth.pitch = prop.pitch || 1;
+  speechSynth.lang = language;
+  speechSynth.text = text;
+  window.speechSynthesis.speak(speechSynth);
 }
 
 /**
@@ -115,6 +115,7 @@ const extractTextFromTree = (nodeTree) => {
   }
   // [DEBUG] 텍스트 디버깅용 출력
   // console.log(text);
+  console.log('text is: ' + type + text);
   return type + ' ' + text;
 };
 
