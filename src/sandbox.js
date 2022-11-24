@@ -136,13 +136,22 @@ const canvasCapture = () => {
     cv.RETR_CCOMP,
     cv.CHAIN_APPROX_SIMPLE,
   );
-  speak(contours.size());
+
   cv.Canny(src, src, 30, 100, 5, false);
   cv.blur(src, src, ksize, anchor, cv.BORDER_DEFAULT);
   cv.imshow('detectionCanvas', src);
   src.delete();
   countMat.delete();
 };
+
+/**
+ * 진행 중인 음성 발생을 취소합니다
+ */
+function abortSpeech() {
+  if (window.speechSynthesis.speak) {
+    window.speechSynthesis.cancel();
+  }
+}
 
 // registerCursorSleepTimeout: 커서가 1초동안 움직이지 않으면 소리가 멈추는 timeout을 등록합니다
 const registerCursorSleepTimeout = () => {
@@ -160,6 +169,7 @@ const loadImage = (imageNode, data) => {
 };
 
 const onMessageHandler = async (event) => {
+  abortSpeech();
   if (event.data[0] == 'i') {
     const dataArray = event.data.split('-');
     // ~: bitwise not(이진연산 not을 두번 = 정수형 반환)
@@ -167,7 +177,13 @@ const onMessageHandler = async (event) => {
     imageHeight = ~~(dataArray[2] / pixelRatio);
     await loadImage(imageContainer, dataArray[3]);
     canvasCapture();
+  } else if (event.data[0] == 't') {
+    const dataArray = event.data.split('/');
+    const text = dataArray[1];
+    //console.log('sandbox ' + text);
+    speak(text);
   } else if (imageHeight > 0 && imageWidth > 0) {
+    abortSpeech();
     const dataArray = event.data.split('/');
     const mx = ~~dataArray[1];
     const my = ~~dataArray[2];
@@ -186,19 +202,35 @@ const onMessageHandler = async (event) => {
   }
 };
 
+/**
+ * message에 대한 이벤트 리스너를 생성합니다.
+ * 이벤트가 발생할 때마다 onMessageHandler를 호출합니다.
+ */
 const registerMessageHandler = () => {
   window.addEventListener('message', onMessageHandler);
 };
 
+/**
+ * message에 대한 이벤트 리스너를 삭제합니다.
+ */
 const removeMessageHandler = () => {
   window.removeEventListener('message', onMessageHandler);
 };
 
+/**
+ * opencv.js가 정상적으로 load되면 실행됩니다.
+ * 오디오의 초기값을 설정해주는 함수를 호출합니다.
+ * message에 대한 이벤트 리스너를 생성하는 함수를 호출합니다.
+ */
 const launchCycle = () => {
   initializeAudioNode();
   registerMessageHandler();
 };
 
+/**
+ * unload 이벤트가 발생하면 호출됩니다.
+ * 이벤트 리스너를 삭제하는 함수를 호출합니다.
+ */
 const abortCycle = () => {
   removeMessageHandler();
 };
@@ -208,7 +240,7 @@ const abortCycle = () => {
 ///////////////////////////
 
 // sandbox.js의 launchCycle 입니다
-// opencv.js가 정상적으로 로드된 뒤 launchCycle을 호출합니다
+// opencv.js가 정상적으로 로드 된 뒤 launchCycle을 호출합니다
 cv['onRuntimeInitialized'] = () => {
   launchCycle();
 };
