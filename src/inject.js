@@ -3,6 +3,12 @@
 /////////////////////
 
 /**
+ * 기존 border값을 저장하는 변수
+ */
+var prev_border;
+var prev_element;
+
+/**
  * 커서 컴포넌트
  */
 
@@ -44,6 +50,7 @@ const domObserverConfig = {
  */
 function startSpeech(text, prop) {
   abortSpeech();
+  restoreBorder();
 
   const language = koreaRegex.test(text) ? 'ko-KR' : 'en-US';
   const speechContext = new SpeechSynthesisUtterance();
@@ -52,6 +59,15 @@ function startSpeech(text, prop) {
   speechContext.lang = language;
   speechContext.text = text;
   window.speechSynthesis.startSpeech(speechContext);
+}
+
+/**
+ *
+ */
+function restoreBorder() {
+  if (prev_element != undefined) {
+    prev_element.style.border = prev_border;
+  }
 }
 
 /**
@@ -77,6 +93,11 @@ const extractTextFromTree = (nodeTree) => {
   if (element == undefined) {
     return '읽을 수 있는 요소가 없습니다.';
   }
+
+  //border를 변경해줍니다.
+  prev_element = element;
+  prev_border = element.style.border;
+  element.style.border = '4px solid blue';
 
   /// 노드 타입을 확인한 뒤 type을 결정합니다
   switch (element.nodeName) {
@@ -152,10 +173,10 @@ async function saveCursorPosition(cursorX, cursorY) {
 async function onCursorMove(e) {
   /// 기존에 진행중이던 음성을 중지합니다
   abortSpeech();
+  restoreBorder();
 
   /// 커서 위치를 저장합니다
   await saveCursorPosition(e.clientX, e.clientY);
-
   // 음성 저장
 
   /// Timeout을 삭제하고 새로운 Timeout을 등록합니다
@@ -198,6 +219,7 @@ function onTouch(e) {
     /// 두번 연달아 터치하는 경우
     /// 발생 중인 음성을 종료합니다
     abortSpeech();
+    restoreBorder();
     doneFirstTouch = false;
 
     /// 하이퍼링크를 탐색하고 존재하는 경우 하이퍼링크를 따라 이동합니다
@@ -217,6 +239,7 @@ function onTouch(e) {
  */
 function onTouchMove(e) {
   abortSpeech();
+  restoreBorder();
   const cursorX = ~~e.touches[0].clientX;
   const cursorY = ~~e.touches[0].clientY;
   saveCursorPosition(cursorX, cursorY);
@@ -381,6 +404,7 @@ function abortCycle() {
   displaceDomObserver();
   clearTimeout(readTimeout);
   abortSpeech();
+  restoreBorder();
 }
 
 ///////////////////////////
@@ -410,3 +434,14 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       break;
   }
 });
+
+function draw() {
+  var canvas = document.getElementById('canvas');
+  if (canvas.getContext) {
+    var ctx = canvas.getContext('2d');
+
+    ctx.fillRect(25, 25, 100, 100);
+    ctx.clearRect(45, 45, 60, 60);
+    ctx.strokeRect(50, 50, 50, 50);
+  }
+}
