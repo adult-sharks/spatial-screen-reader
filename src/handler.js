@@ -66,8 +66,7 @@ const checkValidUrlbyId = async (tabId) => {
     else if (tab.url.includes('chrome-extension://')) return false;
     else return true;
   } catch (err) {
-    console.log('check error');
-    return false;
+    console.error('url check error');
   }
 };
 

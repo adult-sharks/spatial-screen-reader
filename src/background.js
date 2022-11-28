@@ -80,7 +80,8 @@ const checkInjection = async (tabId) => {
       return true;
     }
   } catch (err) {
-    /// 응답이 없는 경우 에러가 발생합니다
+    /// 응답이 없는 경우 에러가 발생합니다 [에러 발생 시 목표 탭의 응답 없음]
+    // console.error(err);
     return false;
   }
 };
@@ -98,8 +99,8 @@ const toggleInjection = async (tabId, command) => {
     await chrome.tabs.sendMessage(tabId, { key: command });
   } catch (err) {
     /// [이슈] 에러 발생의 원인을 찾을 수 없어 임시로 주석처리
+    console.error(err);
     return false;
-    /// console.error(err);
   }
 };
 
@@ -107,13 +108,17 @@ const toggleInjection = async (tabId, command) => {
  * handler.html을 기초로 탭을 생성한 뒤 탭 id를 chrome.storage에 저장합니다
  */
 const openHandlerTab = async () => {
-  const handlerUrl = chrome.runtime.getURL('handler.html');
-  const handlerTab = await chrome.tabs.create({
-    url: handlerUrl,
-    active: true,
-    pinned: true,
-  });
-  await chrome.storage.local.set({ handlerTabId: handlerTab.id });
+  try {
+    const handlerUrl = chrome.runtime.getURL('handler.html');
+    const handlerTab = await chrome.tabs.create({
+      url: handlerUrl,
+      active: true,
+      pinned: true,
+    });
+    await chrome.storage.local.set({ handlerTabId: handlerTab.id });
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 /**
@@ -133,10 +138,14 @@ const closeHandlerTab = async () => {
  * @param {*} targetTabId - Target tab id
  */
 const injectScript = async (targetTabId) => {
-  await chrome.scripting.executeScript({
-    target: { tabId: targetTabId },
-    files: ['inject.js'],
-  });
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: targetTabId },
+      files: ['inject.js'],
+    });
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 /**
@@ -163,7 +172,11 @@ const checkValidUrlbyId = async (tabId) => {
  * 현재 탭의 요소 변경(contentChange)을 handler.js에 알려 이미지를 재생성할 것을 지시합니다
  */
 const notifyHandlerContentChange = async () => {
-  chrome.runtime.sendMessage({ key: 'contentChange' });
+  try {
+    await chrome.runtime.sendMessage({ key: 'contentChange' });
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 /**
