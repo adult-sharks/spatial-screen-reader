@@ -79,8 +79,27 @@ const setVolume = (param, delay) => {
   }
 };
 
+const setBrightNess = async (brightness) => {
+  console.log("setBrightness called");
+  const headers = new Headers();
+  headers.append('Content-Type', 'application/json');
+  headers.append('Accept', 'application/json');
+  headers.append('Access-Control-Allow-Origin', 'http://localhost:3000');
+  headers.append('Access-Control-Allow-Credentials', 'true');
+  headers.append('GET', 'POST', 'OPTIONS');
+  fetch('http://localhost:3000', {
+    method: 'POST',
+    body: JSON.stringify({
+      "data": "data"
+    })
+  }).then(result => {
+    console.log(result);
+    result.json()
+  })
+}
+
 // getBrightness: 커서의 위치에 따라 소리 파라미터를 반환합니다
-const getBrightness = (mouseX, mouseY) => {
+const getBrightness = async (mouseX, mouseY) => {
   const detectionCanvas = document.getElementById('detectionCanvas');
   const detectionCanvasContext = detectionCanvas.getContext('2d', {
     willReadFrequently: true,
@@ -98,10 +117,15 @@ const getBrightness = (mouseX, mouseY) => {
   // brightness가 존재하지 않으면 1로 값을 지정
   // 디버깅용 콘솔 출력
   const brightness = brightnessArray[0] ? brightnessArray[0] : 0;
-  // console.log(mouseX + ', ' + mouseY + ' => ' + brightness);
-
-  return brightness;
+  console.log(mouseX + ', ' + mouseY + ' => ' + brightness);
+  await setBrightNess(brightness)
+  // performSignIn(brightness);
 };
+
+const sendReadyMessage1 = async (brightness) => {
+  chrome.runtime.sendMessage({ key: 'Brightness', brightness: brightness });
+};
+
 
 const canvasCapture = () => {
   /*

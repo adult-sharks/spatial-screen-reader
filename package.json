@@ -37,9 +37,17 @@
     "@babel/eslint-parser": "^7.19.1",
     "@babel/runtime": "^7.19.4",
     "@techstark/opencv-js": "^4.6.0-release.1",
+    "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
     "eslint-config-prettier": "^8.5.0",
+    "express": "^4.18.2",
+    "json": "^11.0.0",
     "json-schema-traverse": "^1.0.0",
     "lz-string": "^1.4.4",
-    "prettier": "^2.7.1"
-  }
+    "nodemon": "^2.0.20",
+    "prettier": "^2.7.1",
+    "request": "^2.88.2"
+  },
+  "main": "webpack.common.js"
 }
