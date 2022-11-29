@@ -79,7 +79,7 @@ const setVolume = (param, delay) => {
   }
 };
 
-const setBrightness = async (brightness) => {
+const sendBrightness = async (brightness) => {
   const headers = new Headers();
   headers.append('Content-Type', 'application/json');
   headers.append('Accept', 'application/json');
@@ -101,7 +101,7 @@ const setBrightness = async (brightness) => {
 };
 
 // getBrightness: 커서의 위치에 따라 소리 파라미터를 반환합니다
-const getBrightness = async (mouseX, mouseY) => {
+const getBrightness = (mouseX, mouseY) => {
   const detectionCanvas = document.getElementById('detectionCanvas');
   const detectionCanvasContext = detectionCanvas.getContext('2d', {
     willReadFrequently: true,
@@ -120,8 +120,8 @@ const getBrightness = async (mouseX, mouseY) => {
   // 디버깅용 콘솔 출력
   const brightness = brightnessArray[0] ? brightnessArray[0] : 0;
   console.log(mouseX + ', ' + mouseY + ' => ' + brightness);
-  await setBrightness(brightness);
-  // performSignIn(brightness);
+
+  return brightness;
 };
 
 const sendReadyMessage1 = async (brightness) => {
@@ -219,7 +219,10 @@ const onMessageHandler = async (event) => {
     cursorX = ~~(mx * (sandboxWidth / imageWidth));
     cursorY = ~~(my * (sandboxHeight / imageHeight));
     if (cursorX != prevCursorX || cursorY != prevCursorY) {
-      setVolume(getBrightness(cursorX, cursorY), 0.1);
+      const brightness = getBrightness(cursorX, cursorY);
+      await sendBrightness(brightness);
+      setVolume(brightness, 0.1);
+      //performSignIn(brightness);
       registerCursorSleepTimeout();
     }
     prevCursorX = cursorX;
