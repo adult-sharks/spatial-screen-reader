@@ -99,6 +99,9 @@ const captureScreen = async () => {
   if (isValidTab) {
     const screenDataUri = await chrome.tabs.captureVisibleTab();
     const compressedDataUri = await resizeDataUri(screenDataUri, 500, 500);
+    // const validImg = document.createElement('img');
+    // validImg.src = screenDataUri;
+    // document.body.appendChild(validImg);
 
     // dataUri가 이전 값과 일치하는 지 확인 후 전송합니다
     if (previousDataUri !== compressedDataUri) postScreen(compressedDataUri);
@@ -212,6 +215,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       break;
     case 'contentChange':
       setTimeout(captureScreen, 200);
+      sendResponse({ key: 'response', value: true });
       break;
     case 'onTextExtract':
       console.log(message.content);

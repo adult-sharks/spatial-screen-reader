@@ -96,9 +96,9 @@ const checkInjection = async (tabId) => {
  */
 const toggleInjection = async (tabId, command) => {
   try {
-    await chrome.tabs.sendMessage(tabId, { key: command });
+    const res = await chrome.tabs.sendMessage(tabId, { key: command });
+    return res.active;
   } catch (err) {
-    /// [이슈] 에러 발생의 원인을 찾을 수 없어 임시로 주석처리
     console.error(err);
     return false;
   }
@@ -173,7 +173,7 @@ const checkValidUrlbyId = async (tabId) => {
  */
 const notifyHandlerContentChange = async () => {
   try {
-    await chrome.runtime.sendMessage({ key: 'contentChange' });
+    const res = await chrome.runtime.sendMessage({ key: 'contentChange' });
   } catch (err) {
     console.error(err);
   }
@@ -216,9 +216,12 @@ const launchCycle = async () => {
   await toggleInjection(targetTabId, 'on');
 
   /// handler.js에 페이지 이미지를 재생성 할 것을 지시합니다
-  notifyHandlerContentChange();
+  await notifyHandlerContentChange();
 
   console.log('sharks🦈-on');
+  setTimeout(() => {
+    onChangeCycle();
+  }, 1000);
 };
 
 /**
@@ -271,7 +274,7 @@ const onChangeCycle = async (tabId) => {
 
   // 현재 활성화된 탭의 inject.js에 활성화 메시지를 보냅니다
   await toggleInjection(targetTabId, 'on');
-  notifyHandlerContentChange();
+  await notifyHandlerContentChange();
 
   console.log('sharks🦈-move');
 };
@@ -280,10 +283,10 @@ const onChangeCycle = async (tabId) => {
  * 사용자 화면의 DOM이 변경되었을 때 발생하는 onDomChangeCycle입니다
  * @returns {undefined} undefined - Escape return
  */
-const onDomChangeCycle = () => {
+const onDomChangeCycle = async () => {
   if (ongoingCycle === true) return;
   setOngoingCycleTrue();
-  notifyHandlerContentChange();
+  await notifyHandlerContentChange();
 };
 
 ///////////////////////////
