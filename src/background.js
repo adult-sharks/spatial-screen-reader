@@ -14,25 +14,25 @@ let ongoingCycle = false;
  * @returns {Promise<boolean>} status - Extension activity status
  * @throws {Error} Activity status read error
  */
-const getActivityStatus = async () => {
+async function getActivityStatus() {
   const { activityStatus } = await chrome.storage.local.get(['activityStatus']);
   if (activityStatus === undefined) return false;
   else if (activityStatus) return JSON.parse(activityStatus);
   else throw new Error('Activity status read error');
-};
+}
 
 /**
  * chrome.storage에 activity status를 저장합니다
  * @async
  * @param {boolean} status - Extension activity status
  */
-const setActivityStatus = async (status) => {
+async function setActivityStatus(status) {
   if (status === true) {
     await chrome.storage.local.set({ activityStatus: 'true' });
   } else if (status === false) {
     await chrome.storage.local.set({ activityStatus: 'false' });
   }
-};
+}
 
 /**
  * chrome.tabs를 이용해 현재 활성화된 탭의 아이디(tabId)를 반환합니다
@@ -40,50 +40,51 @@ const setActivityStatus = async (status) => {
  * @returns {Promise<string>} tabId - Active tab id
  * @throws {Error} Tab id parse error
  */
-const queryActiveTabId = async () => {
+async function queryActiveTabId() {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tabs.length > 0) return tabs[0].id;
   else throw new Error('Tab id parse error');
-};
+}
 
 /**
  * chrome.storage에서 현재 활성화된 탭의 아이디를 반환하고, 값이 없는 경우 {@link queryActiveTabId}를 호출합니다
  * @returns {Promise<string>} tabId - Active tab id
  * @returns {string} tabId - Active tab id
  */
-const getActiveTabId = async () => {
+async function getActiveTabId() {
   const { activeTabId } = await chrome.storage.local.get(['activeTabId']);
   if (activeTabId === undefined) {
     return await queryActiveTabId();
   } else if (activeTabId) {
     return JSON.parse(activeTabId);
   }
-};
+}
 
 /**
  * 인자로 받은 탭을 활성화 탭으로 지정하여 chrome.storage에 저장합니다
  * @param {string} tabId - Tab id
  */
-const setActiveTabId = async (tabId) => {
+async function setActiveTabId(tabId) {
   await chrome.storage.local.set({ activeTabId: tabId });
-};
+}
 
 /**
  * 지정 탭(tabId)에 메시지를 보낸 뒤 응답 여부를 통해 스크립트 삽입 여부를 확인합니다
  * @param {string} tabId - Tab id
  * @returns {boolean} - Injection status
  */
-const checkInjection = async (tabId) => {
+async function checkInjection(tabId) {
   try {
     const response = await chrome.tabs.sendMessage(tabId, { key: 'check' });
     if (response.received === true) {
       return true;
     }
   } catch (err) {
-    /// 응답이 없는 경우 에러가 발생합니다
+    /// 응답이 없는 경우 에러가 발생합니다 [에러 발생 시 목표 탭의 응답 없음]
+    // console.error(err);
     return false;
   }
-};
+}
 
 // toggleInjection: 스크립트가 삽입된 지정 탭(tabId)에 command를 보냅니다
 
@@ -93,58 +94,66 @@ const checkInjection = async (tabId) => {
  * @param {string} command - Command
  * @returns
  */
-const toggleInjection = async (tabId, command) => {
+async function toggleInjection(tabId, command) {
   try {
-    await chrome.tabs.sendMessage(tabId, { key: command });
+    const res = await chrome.tabs.sendMessage(tabId, { key: command });
+    return res.active;
   } catch (err) {
-    /// [이슈] 에러 발생의 원인을 찾을 수 없어 임시로 주석처리
+    console.error(err);
     return false;
-    /// console.error(err);
   }
-};
+}
 
 /**
  * handler.html을 기초로 탭을 생성한 뒤 탭 id를 chrome.storage에 저장합니다
  */
-const openHandlerTab = async () => {
-  const handlerUrl = chrome.runtime.getURL('handler.html');
-  const handlerTab = await chrome.tabs.create({
-    url: handlerUrl,
-    active: true,
-    pinned: true,
-  });
-  await chrome.storage.local.set({ handlerTabId: handlerTab.id });
-};
+async function openHandlerTab() {
+  try {
+    const handlerUrl = chrome.runtime.getURL('handler.html');
+    const handlerTab = await chrome.tabs.create({
+      url: handlerUrl,
+      active: true,
+      pinned: true,
+    });
+    await chrome.storage.local.set({ handlerTabId: handlerTab.id });
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 /**
  * chrome.storage의 탭 id를 불러와 탭을 종료한 뒤 {@link setActivityStatus}를 호출해 false로 저장합니다
  */
-const closeHandlerTab = async () => {
+async function closeHandlerTab() {
   try {
     await chrome.runtime.sendMessage({ key: 'abort' });
   } catch (err) {
     await setActivityStatus(false);
     console.error(err);
   }
-};
+}
 
 /**
  * 탭 id를 받아 inject.js를 삽입합니다
  * @param {*} targetTabId - Target tab id
  */
-const injectScript = async (targetTabId) => {
-  await chrome.scripting.executeScript({
-    target: { tabId: targetTabId },
-    files: ['inject.js'],
-  });
-};
+async function injectScript(targetTabId) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: targetTabId },
+      files: ['inject.js'],
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 /**
  * 탭 id를 기준으로 탭이 연결하는 URL이 확장 프로그램에서 접근 가능한지 확인합니다
  * @param {*} tabId - Tab id
  * @returns {boolean} result - Accessibility result
  */
-const checkValidUrlbyId = async (tabId) => {
+async function checkValidUrlbyId(tabId) {
   try {
     const tab = await chrome.tabs.get(tabId);
 
@@ -157,25 +166,29 @@ const checkValidUrlbyId = async (tabId) => {
     console.error('Error: Check Valid Url');
     return false;
   }
-};
+}
 
 /**
  * 현재 탭의 요소 변경(contentChange)을 handler.js에 알려 이미지를 재생성할 것을 지시합니다
  */
-const notifyHandlerContentChange = async () => {
-  chrome.runtime.sendMessage({ key: 'contentChange' });
-};
+async function notifyHandlerContentChange() {
+  try {
+    const res = await chrome.runtime.sendMessage({ key: 'contentChange' });
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 /**
  * ongoingCycle을 true로 바꾼 뒤 600ms 후 false로 바꾸는 timeout을 등록합니다
  */
-const setOngoingCycleTrue = () => {
+function setOngoingCycleTrue() {
   ongoingCycle = true;
   const changeCycleTimeout = setTimeout(() => {
     ongoingCycle = false;
     clearTimeout(changeCycleTimeout);
   }, 600);
-};
+}
 
 /////////////////////
 // cycle functions //
@@ -185,7 +198,7 @@ const setOngoingCycleTrue = () => {
  * 사용자가 프로그램을 토글할 시 발생하는 launchCycle 입니다
  * @returns {undefined} undefined - Escape return
  */
-const launchCycle = async () => {
+async function launchCycle() {
   /// 진행중인 600ms timeout이 존재하면 실행을 멈춥니다
   if (ongoingCycle === true) return;
   setOngoingCycleTrue();
@@ -198,15 +211,22 @@ const launchCycle = async () => {
   await openHandlerTab();
 
   /// Active tab의 inject.js 삽입 여부를 확인하고 삽입 시 활성화 메시지를 전달합니다
-  if ((await checkInjection(targetTabId)) === false)
+  if ((await checkInjection(targetTabId)) === false) {
     await injectScript(targetTabId);
+  }
+
   await toggleInjection(targetTabId, 'on');
 
   /// handler.js에 페이지 이미지를 재생성 할 것을 지시합니다
-  notifyHandlerContentChange();
+  await notifyHandlerContentChange();
 
   console.log('sharks🦈-on');
-};
+
+  /// 실행되지 않는 경우를 고려해 다시 실행을 지시합니다
+  setTimeout(() => {
+    onChangeCycle();
+  }, 1000);
+}
 
 /**
  * background.js가 종료될 때 호출되는 사이클입니다
@@ -215,7 +235,7 @@ const launchCycle = async () => {
  * [3] 활성화 탭에 종료 메시지를 전달합니다
  * @returns {undefined} undefined - Escape return
  */
-const abortCycle = async () => {
+async function abortCycle() {
   /// 활성화 탭 아이디를 불러옵니다
   const targetTabId = await getActiveTabId();
   await closeHandlerTab();
@@ -225,14 +245,14 @@ const abortCycle = async () => {
   await toggleInjection(targetTabId, 'off');
 
   console.log('sharks🦈-off');
-};
+}
 
 /**
  * 사용자 화면 변경(탭 변경, 페이지 리프레시)이 발생할 때 호출되는 사이클 함수입니다
  * @param {string} tabId - Active tab id
  * @returns {undefined} undefined - Escape return
  */
-const onChangeCycle = async (tabId) => {
+async function onChangeCycle(tabId) {
   /// 현재 활성화 상태를 조회합니다
   const activityStatus = await getActivityStatus();
   if (activityStatus === false) return;
@@ -258,20 +278,20 @@ const onChangeCycle = async (tabId) => {
 
   // 현재 활성화된 탭의 inject.js에 활성화 메시지를 보냅니다
   await toggleInjection(targetTabId, 'on');
-  notifyHandlerContentChange();
+  await notifyHandlerContentChange();
 
   console.log('sharks🦈-move');
-};
+}
 
 /**
  * 사용자 화면의 DOM이 변경되었을 때 발생하는 onDomChangeCycle입니다
  * @returns {undefined} undefined - Escape return
  */
-const onDomChangeCycle = () => {
+async function onDomChangeCycle() {
   if (ongoingCycle === true) return;
   setOngoingCycleTrue();
-  notifyHandlerContentChange();
-};
+  await notifyHandlerContentChange();
+}
 
 ///////////////////////////
 // chrome event listners //

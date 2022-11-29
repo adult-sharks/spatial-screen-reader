@@ -416,17 +416,17 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.key) {
     // background.js 에게 inject.js 가 삽입되었는지의 여부를 알려줍니다.
     case 'check':
-      sendResponse({ received: true });
+      sendResponse({ key: 'response', received: true });
       break;
     // 토클이 되었을 때 launchCycle 함수를 실행합니다.
     case 'on':
-      sendResponse({ active: true });
+      sendResponse({ key: 'response', active: true });
       console.log('inject-toggle-on');
       launchCycle();
       break;
     // 토클이 되었을 때 abortCycle 함수를 실행합니다.
     case 'off':
-      sendResponse({ active: false });
+      sendResponse({ key: 'response', active: false });
       console.log('inject-toggle-off');
       abortCycle();
       break;
