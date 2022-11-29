@@ -70,7 +70,7 @@ const initializeAudioNode = () => {
 // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
 const setVolume = (param, delay) => {
   if (param === 0) {
-    gainNode.gain.linearRampToValueAtTime(param, audioCtx.currentTime + delay);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + delay);
   } else {
     gainNode.gain.exponentialRampToValueAtTime(
       param / 150,
@@ -79,24 +79,26 @@ const setVolume = (param, delay) => {
   }
 };
 
-const setBrightNess = async (brightness) => {
-  console.log("setBrightness called");
+const setBrightness = async (brightness) => {
   const headers = new Headers();
   headers.append('Content-Type', 'application/json');
   headers.append('Accept', 'application/json');
   headers.append('Access-Control-Allow-Origin', 'http://localhost:3000');
   headers.append('Access-Control-Allow-Credentials', 'true');
   headers.append('GET', 'POST', 'OPTIONS');
-  fetch('http://localhost:3000', {
+
+  const res = await fetch('http://localhost:3000', {
     method: 'POST',
+    headers: headers,
     body: JSON.stringify({
-      "data": "data"
-    })
-  }).then(result => {
-    console.log(result);
-    result.json()
-  })
-}
+      key: '우리 함께 환희를 누리고 싶어',
+      data: brightness,
+    }),
+  });
+
+  const value = await res.json();
+  console.log(value);
+};
 
 // getBrightness: 커서의 위치에 따라 소리 파라미터를 반환합니다
 const getBrightness = async (mouseX, mouseY) => {
@@ -118,14 +120,13 @@ const getBrightness = async (mouseX, mouseY) => {
   // 디버깅용 콘솔 출력
   const brightness = brightnessArray[0] ? brightnessArray[0] : 0;
   console.log(mouseX + ', ' + mouseY + ' => ' + brightness);
-  await setBrightNess(brightness)
+  await setBrightness(brightness);
   // performSignIn(brightness);
 };
 
 const sendReadyMessage1 = async (brightness) => {
   chrome.runtime.sendMessage({ key: 'Brightness', brightness: brightness });
 };
-
 
 const canvasCapture = () => {
   /*
