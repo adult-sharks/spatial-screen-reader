@@ -66,7 +66,7 @@ function startSpeech(text, prop) {
  */
 function restoreBorder() {
   if (prev_element != undefined) {
-    prev_element.style.border = prev_border;
+    prev_element.style.boxShadow = prev_border;
   }
 }
 
@@ -96,8 +96,8 @@ const extractTextFromTree = (nodeTree) => {
 
   //border를 변경해줍니다.
   prev_element = element;
-  prev_border = element.style.border;
-  element.style.border = '4px solid blue';
+  prev_border = element.style.boxShadow;
+  element.style.boxShadow = `0px 0px 0px 15px #3452eb`;
 
   /// 노드 타입을 확인한 뒤 type을 결정합니다
   switch (element.nodeName) {
