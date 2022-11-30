@@ -80,9 +80,15 @@ async function checkInjection(tabId) {
       return true;
     }
   } catch (err) {
-    /// 응답이 없는 경우 에러가 발생합니다 [에러 발생 시 목표 탭의 응답 없음]
-    // console.error(err);
-    return false;
+    /// 에러 핸들링: 응답이 없는 경우 "Could..." 이하 에러가 발생합니다
+    if (
+      err.message ===
+      'Could not establish connection. Receiving end does not exist.'
+    ) {
+      return false;
+    } else {
+      console.error(err);
+    }
   }
 }
 
@@ -144,6 +150,7 @@ async function injectScript(targetTabId) {
       files: ['inject.js'],
     });
   } catch (err) {
+    //[에러 발생 영역]
     console.error(err);
   }
 }
@@ -175,6 +182,7 @@ async function notifyHandlerContentChange() {
   try {
     const res = await chrome.runtime.sendMessage({ key: 'contentChange' });
   } catch (err) {
+    // [에러 발생 영역]
     console.error(err);
   }
 }
@@ -208,24 +216,17 @@ async function launchCycle() {
   await setActiveTabId(targetTabId);
 
   if ((await checkValidUrlbyId(targetTabId)) === false) return;
-  await openHandlerTab();
 
   /// Active tab의 inject.js 삽입 여부를 확인하고 삽입 시 활성화 메시지를 전달합니다
   if ((await checkInjection(targetTabId)) === false) {
     await injectScript(targetTabId);
   }
-
   await toggleInjection(targetTabId, 'on');
 
-  /// handler.js에 페이지 이미지를 재생성 할 것을 지시합니다
-  await notifyHandlerContentChange();
-
+  await openHandlerTab();
   console.log('sharks🦈-on');
 
   /// 실행되지 않는 경우를 고려해 다시 실행을 지시합니다
-  setTimeout(() => {
-    onChangeCycle();
-  }, 1000);
 }
 
 /**
@@ -349,6 +350,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
         .catch((err) => {
           console.error(err);
         });
+      notifyHandlerContentChange();
       break;
     case 'domChange':
       /// DOM 변경이 발생할 때 활성화되는 사이클입니다

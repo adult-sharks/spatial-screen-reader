@@ -214,8 +214,8 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       abortCycle();
       break;
     case 'contentChange':
-      setTimeout(captureScreen, 200);
       sendResponse({ key: 'response', value: true });
+      setTimeout(captureScreen, 200);
       break;
     case 'onTextExtract':
       console.log(message.content);
