@@ -148,6 +148,11 @@ const cropDataUri = (data, x, y, width, height) => {
     cropImg.onload = function () {
       const imageHeight = cropImg.height;
       const imageWidth = cropImg.width;
+      x = x * devicePixelRatio;
+      y = y * devicePixelRatio;
+      width = width * devicePixelRatio;
+      height = height * devicePixelRatio;
+
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
