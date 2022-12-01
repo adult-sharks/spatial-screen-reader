@@ -7,6 +7,8 @@
  */
 var prev_border;
 var prev_element;
+var prev_transition;
+var imgOverlay;
 
 /**
  * 커서 컴포넌트
@@ -62,11 +64,12 @@ function startSpeech(text, prop) {
 }
 
 /**
- *
+ * 요소의 경계를 원래대로 되돌립니다
  */
 function restoreBorder() {
   if (prev_element != undefined) {
     prev_element.style.boxShadow = prev_border;
+    prev_element.style.transition = prev_transition;
   }
 }
 
@@ -97,7 +100,9 @@ const extractTextFromTree = (nodeTree) => {
   //border를 변경해줍니다.
   prev_element = element;
   prev_border = element.style.boxShadow;
-  element.style.boxShadow = `0px 0px 0px 15px #3452eb`;
+  prev_transition = element.style.transition;
+  element.style.boxShadow = `0px 0px 10px 5px #5e03fc`;
+  element.style.transition = `box-shadow 250ms`;
 
   /// 노드 타입을 확인한 뒤 type을 결정합니다
   switch (element.nodeName) {
@@ -174,15 +179,17 @@ async function onCursorMove(e) {
   /// 기존에 진행중이던 음성을 중지합니다
   abortSpeech();
   restoreBorder();
+  clearImageOverlay();
 
   /// 커서 위치를 저장합니다
   await saveCursorPosition(e.clientX, e.clientY);
-  // 음성 저장
 
   /// Timeout을 삭제하고 새로운 Timeout을 등록합니다
   clearTimeout(readTimeout);
   readTimeout = setTimeout(() => {
     const text = extractTextFromTree(e.path);
+    const bbox = getBoundingBox(e.path[0]);
+    onItemHighlight(bbox);
     chrome.runtime.sendMessage({
       key: 'onTextExtract',
       content: text,
@@ -258,6 +265,18 @@ function onDomMutation(mutationList, observer) {
 }
 
 /**
+ * 요소 하이라이트 시 바운딩 박스 정보를 메시지를 통해 전달합니다
+ * @param {DOMRect} boundingBox - Bouding box object
+ */
+async function onItemHighlight(boundingBox) {
+  if (boundingBox.width < 1000 && boundingBox.height < 1000)
+    await chrome.runtime.sendMessage({
+      key: 'onItemHighlight',
+      value: boundingBox,
+    });
+}
+
+/**
  * DOM 변경 옵저버를 html 전체 문서에 배치합니다
  */
 function deployDomObserver() {
@@ -316,6 +335,45 @@ function onScroll() {
     chrome.runtime.sendMessage({ key: 'domChange' });
     clearTimeout(scrollTimeout);
   }, 800);
+}
+
+/**
+ * Image Highlight 시 이미지 오버레이를 생성하는 함수입니다
+ */
+function setImageOverlay() {
+  imgOverlay = document.createElement('img');
+  imgOverlay.style.backgroundColor = 'white';
+  imgOverlay.style.zIndex = 9999;
+  imgOverlay.style.position = 'fixed';
+  imgOverlay.style.bottom = '2.5vh';
+  imgOverlay.style.right = '2.5vw';
+  imgOverlay.style.width = '95vw';
+  imgOverlay.style.height = '30vh';
+  imgOverlay.style.display = 'none';
+  imgOverlay.style.objectFit = 'contain';
+  imgOverlay.style.boxShadow = `0px 0px 5px 10px #5e03fc`;
+  document.body.appendChild(imgOverlay);
+}
+
+/**
+ * 이미지 오버레이를 제거하는 함수입니다
+ */
+function clearImageOverlay() {
+  imgOverlay.style.display = 'none';
+}
+
+/**
+ * 이미지 오버레이의 데이터 소스를 결정하는 함수입니다
+ * @param {*} value - baseURI image data
+ */
+function setImageOverlaySource(value) {
+  imgOverlay.src = value;
+  imgOverlay.style.display = 'block';
+}
+
+function getBoundingBox(element) {
+  const bbox = element.getBoundingClientRect();
+  return bbox;
 }
 
 ///////////////////////////
@@ -388,6 +446,7 @@ function launchCycle() {
   setScrollEventListener();
   if (isTouchDevice()) setTouchEventListener();
   deployDomObserver();
+  setImageOverlay();
 }
 
 /**
@@ -405,6 +464,7 @@ function abortCycle() {
   clearTimeout(readTimeout);
   abortSpeech();
   restoreBorder();
+  clearImageOverlay();
 }
 
 ///////////////////////////
@@ -430,6 +490,8 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       console.log('inject-toggle-off');
       abortCycle();
       break;
+    case 'cropDone':
+      setImageOverlaySource(message.value);
     default:
       break;
   }

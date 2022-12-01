@@ -182,7 +182,6 @@ async function notifyHandlerContentChange() {
   try {
     const res = await chrome.runtime.sendMessage({ key: 'contentChange' });
   } catch (err) {
-    // [에러 발생 영역]
     console.error(err);
   }
 }

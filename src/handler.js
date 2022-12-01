@@ -7,6 +7,7 @@ const captureIntervalParam = 600;
 
 var screenCaptureInterval;
 var previousDataUri;
+var currentDataUri;
 var cursorX = 0;
 var cursorY = 0;
 
@@ -97,8 +98,8 @@ const captureScreen = async () => {
 
   // validTab 인지 확인한 뒤 화면은 dataURI로 생성하여 압축 후 전송합니다
   if (isValidTab) {
-    const screenDataUri = await chrome.tabs.captureVisibleTab();
-    const compressedDataUri = await resizeDataUri(screenDataUri, 500, 500);
+    currentDataUri = await chrome.tabs.captureVisibleTab();
+    const compressedDataUri = await resizeDataUri(currentDataUri, 500, 500);
     // const validImg = document.createElement('img');
     // validImg.src = screenDataUri;
     // document.body.appendChild(validImg);
@@ -136,6 +137,29 @@ const resizeDataUri = (data, width, height) => {
     };
 
     resizeImg.src = data;
+  });
+};
+
+const cropDataUri = (data, x, y, width, height) => {
+  return new Promise(async function (resolve, reject) {
+    const cropImg = document.createElement('img');
+
+    /// 이미지가 로드되면 호출되는 콜백 함수입니다
+    cropImg.onload = function () {
+      const imageHeight = cropImg.height;
+      const imageWidth = cropImg.width;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.drawImage(this, x, y, width, height, 0, 0, width, height);
+      const dataURI = canvas.toDataURL();
+      resolve(dataURI);
+    };
+
+    cropImg.src = data;
   });
 };
 
@@ -221,10 +245,21 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       console.log(message.content);
       sandbox.contentWindow.postMessage('text/' + message.content, '*');
       break;
+    case 'onItemHighlight':
+      const { x, y, width, height } = message.value;
+      currentDataUri &&
+        cropDataUri(currentDataUri, x, y, width, height).then((res) => {
+          sendCropDone(sender.tab.id, res);
+        });
     default:
       break;
   }
 });
+
+function sendCropDone(tabId, res) {
+  chrome.tabs.sendMessage(tabId, { key: 'cropDone', value: res });
+  console.log('crop message sent');
+}
 
 /**
  * storage에 변경이 발생 시 postCursorCoordinate 함수를 호출합니다
