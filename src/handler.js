@@ -1,9 +1,12 @@
+import * as tf from '@tensorflow/tfjs';
+
 /////////////////////
 // local variables //
 /////////////////////
 
 const sandbox = document.getElementById('sandbox');
 const captureIntervalParam = 600;
+const mobilenet = require('@tensorflow-models/mobilenet');
 
 var screenCaptureInterval;
 var previousDataUri;
@@ -168,6 +171,20 @@ const cropDataUri = (data, x, y, width, height) => {
   });
 };
 
+const classifyCropImage = async (dataURI) => {
+  return new Promise(async function (resolve, reject){
+    const classifyImg = document.createElement('img');
+
+    classifyImg.onload = async function () {
+      const model = await mobilenet.load();
+      const res = await model.classify(classifyImg);
+      resolve(res)
+    }
+
+    classifyImg.src = dataURI;
+  })
+}
+
 /**
  * dataURI로 전달받은 화면 이미지를 sandbox로 전달합니다
  * @param {string} screenDataUri - data string to be passed on
@@ -247,13 +264,15 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       setTimeout(captureScreen, 200);
       break;
     case 'onTextExtract':
-      console.log(message.content);
+      // console.log(message.content);
       sandbox.contentWindow.postMessage('text/' + message.content, '*');
       break;
     case 'onItemHighlight':
       const { x, y, width, height } = message.value;
       currentDataUri &&
-        cropDataUri(currentDataUri, x, y, width, height).then((res) => {
+        cropDataUri(currentDataUri, x, y, width, height).then(async (res) => {
+          const category = await classifyCropImage(res);
+          console.log(category);
           sendCropDone(sender.tab.id, res);
         });
     default:
@@ -263,7 +282,6 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
 
 function sendCropDone(tabId, res) {
   chrome.tabs.sendMessage(tabId, { key: 'cropDone', value: res });
-  console.log('crop message sent');
 }
 
 /**

@@ -7,6 +7,7 @@ import cv from '@techstark/opencv-js';
 const sandboxHeight = 500;
 const sandboxWidth = 500;
 const pixelRatio = window.devicePixelRatio;
+
 var imageHeight = 0;
 var imageWidth = 0;
 

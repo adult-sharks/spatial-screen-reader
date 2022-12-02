@@ -37,6 +37,8 @@
     "@babel/eslint-parser": "^7.19.1",
     "@babel/runtime": "^7.19.4",
     "@techstark/opencv-js": "^4.6.0-release.1",
+    "@tensorflow-models/mobilenet": "^2.1.0",
+    "@tensorflow/tfjs": "^4.1.0",
     "eslint-config-prettier": "^8.5.0",
     "lz-string": "^1.4.4",
     "prettier": "^2.7.1"
