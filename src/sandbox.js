@@ -72,13 +72,34 @@ const initializeAudioNode = () => {
 // https://developer.mozilla.org/en-US/docs/Web/API/AudioParam/exponentialRampToValueAtTime
 const setVolume = (param, delay) => {
   if (param === 0) {
-    gainNode.gain.linearRampToValueAtTime(param, audioCtx.currentTime + delay);
+    gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + delay);
   } else {
     gainNode.gain.exponentialRampToValueAtTime(
       param / 150,
       audioCtx.currentTime + delay,
     );
   }
+};
+
+const sendBrightness = async (brightness) => {
+  const headers = new Headers();
+  headers.append('Content-Type', 'application/json');
+  headers.append('Accept', 'application/json');
+  headers.append('Access-Control-Allow-Origin', 'http://localhost:3000');
+  headers.append('Access-Control-Allow-Credentials', 'true');
+  headers.append('GET', 'POST', 'OPTIONS');
+
+  const res = await fetch('http://localhost:3000', {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({
+      key: '우리 함께 환희를 누리고 싶어',
+      data: brightness,
+    }),
+  });
+
+  const value = await res.json();
+  console.log(value);
 };
 
 // getBrightness: 커서의 위치에 따라 소리 파라미터를 반환합니다
@@ -100,9 +121,13 @@ const getBrightness = (mouseX, mouseY) => {
   // brightness가 존재하지 않으면 1로 값을 지정
   // 디버깅용 콘솔 출력
   const brightness = brightnessArray[0] ? brightnessArray[0] : 0;
-  // console.log(mouseX + ', ' + mouseY + ' => ' + brightness);
+  console.log(mouseX + ', ' + mouseY + ' => ' + brightness);
 
   return brightness;
+};
+
+const sendReadyMessage1 = async (brightness) => {
+  chrome.runtime.sendMessage({ key: 'Brightness', brightness: brightness });
 };
 
 const canvasCapture = () => {
@@ -196,7 +221,10 @@ const onMessageHandler = async (event) => {
     cursorX = ~~(mx * (sandboxWidth / imageWidth));
     cursorY = ~~(my * (sandboxHeight / imageHeight));
     if (cursorX != prevCursorX || cursorY != prevCursorY) {
-      setVolume(getBrightness(cursorX, cursorY), 0.1);
+      const brightness = getBrightness(cursorX, cursorY);
+      await sendBrightness(brightness);
+      setVolume(brightness, 0.1);
+      //performSignIn(brightness);
       registerCursorSleepTimeout();
     }
     prevCursorX = cursorX;

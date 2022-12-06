@@ -208,7 +208,9 @@ function setOngoingCycleTrue() {
 async function launchCycle() {
   /// 진행중인 600ms timeout이 존재하면 실행을 멈춥니다
   if (ongoingCycle === true) return;
+
   setOngoingCycleTrue();
+  let headers = new Headers();
 
   /// Active tab id를 설정하고 이를 저장합니다
   const targetTabId = await queryActiveTabId();
@@ -303,7 +305,7 @@ async function onDomChangeCycle() {
  */
 chrome.action.onClicked.addListener(async (tab) => {
   const activityStatus = await getActivityStatus();
-  if (activityStatus === false) launchCycle().catch((err) => {});
+  if (activityStatus === false) launchCycle().catch((err) => { });
   if (activityStatus === true) abortCycle();
 });
 
@@ -335,6 +337,13 @@ chrome.runtime.onStartup.addListener(() => {
   console.log('sharks🦈-initialized');
 });
 
+const getBrightNessbylocal = async () => {
+  const { brightness } = await chrome.storage.local.get(['brightness']);
+  if (brightness) {
+    return JSON.parse(brightness);
+  }
+};
+
 /**
  * 확장 프로그램의 다른 스크립트로부터 메시지를 전달 받습니다
  */
@@ -344,7 +353,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       /// handler 탭으로 부터 handlerReady 메시지를 받을 경우 activeTabId를 불러와 해당 탭을 활성화 합니다
       getActiveTabId()
         .then((tabId) => {
-          chrome.tabs.update(tabId, { active: true }, () => {});
+          chrome.tabs.update(tabId, { active: true }, () => { });
         })
         .catch((err) => {
           console.error(err);
