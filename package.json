@@ -46,6 +46,7 @@
     "json-schema-traverse": "^1.0.0",
     "lz-string": "^1.4.4",
     "nodemon": "^2.0.20",
+    "path": "^0.12.7",
     "prettier": "^2.7.1",
     "request": "^2.88.2",
     "serialport": "^10.5.0"

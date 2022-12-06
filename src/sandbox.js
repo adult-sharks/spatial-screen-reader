@@ -99,7 +99,7 @@ const sendBrightness = async (brightness) => {
   });
 
   const value = await res.json();
-  console.log(value);
+  //console.log(value);
 };
 
 // getBrightness: 커서의 위치에 따라 소리 파라미터를 반환합니다
