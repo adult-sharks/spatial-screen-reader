@@ -223,7 +223,7 @@ const onMessageHandler = async (event) => {
     if (cursorX != prevCursorX || cursorY != prevCursorY) {
       const brightness = getBrightness(cursorX, cursorY);
       await sendBrightness(brightness);
-      setVolume(brightness, 0.1);
+      // setVolume(brightness, 0.1);
       //performSignIn(brightness);
       registerCursorSleepTimeout();
     }
