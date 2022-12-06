@@ -7,6 +7,7 @@ import cv from '@techstark/opencv-js';
 const sandboxHeight = 500;
 const sandboxWidth = 500;
 const pixelRatio = window.devicePixelRatio;
+const koreaRegex = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/;
 var imageHeight = 0;
 var imageWidth = 0;
 
@@ -41,8 +42,9 @@ function speak(text, opt_prop) {
   // if reading, cancel TTS
   window.speechSynthesis.cancel();
   const speechContext = new SpeechSynthesisUtterance();
+  const language = koreaRegex.test(text) ? 'ko-KR' : 'en-US';
   speechContext.rate = 1;
-  speechContext.lang = 'ko-KR';
+  speechContext.lang = language ? language : 'ko-KR';
   speechContext.pitch = 1;
   speechContext.text = text;
   window.speechSynthesis.speak(speechContext);
