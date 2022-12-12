@@ -4,6 +4,8 @@ const cors = require('cors');
 const app = express();
 const router = express.Router();
 
+var brightness = 0; // sandbox.js 으로부터 받아올 값
+
 const corsOptions = {
   origin: '*',
   credentials: true, //access-control-allow-credentials:true
@@ -39,7 +41,8 @@ get하지 않은 페이지 접속시 나올 메시지. */
 app.use('/', router);
 
 router.post('/', (request, response) => {
-  console.log(request.body);
+  // console.log(request.body);
+  brightness = request.body.data
   response.json({ key: '빛나는 생명의 환희' });
 });
 
@@ -49,3 +52,25 @@ app.listen(3000, () => {
 });
 
 // 브라우저에서 오는 응답이 json 일수도 있고, 아닐 수도 있으므로 urlencoded() 도 추가한다.
+
+var SerialPort = require("serialport").SerialPort;
+// 포트: Arduino Uno(COM11)
+// baudRate: 9600
+// SerialPort 객체 생성
+var serialPort = new SerialPort({
+  path:"COM11",
+  baudRate:9600, 
+}, false);
+
+serialPort.open(() => {
+  console.log("connected...");
+  // Arduino 로부터 data 전송을 받아옴
+  serialPort.on("data", (data) => {
+    console.log("data received: " + data);
+  });
+  // 50 ms 단위로 brightness 값을 Arduino 에 전송함
+  setInterval(() => {
+    var charBrightness = String.fromCharCode(brightness);
+    serialPort.write(charBrightness, (err, results) => {});
+  }, 50);
+});
