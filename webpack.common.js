@@ -23,6 +23,22 @@ module.exports = {
         test: /\.(css)$/,
         use: [MiniCssExtractPlugin.loader, 'css-loader'],
       },
+      {
+        test: /\.bin$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'url-loader',
+             options: {
+               encoding: false,
+               mimetype: false,
+               generator: (content) => {
+                 return content;
+               }
+             },
+           },
+         ],
+      }
     ],
   },
   resolve: {

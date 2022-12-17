@@ -1,4 +1,7 @@
 import * as tf from '@tensorflow/tfjs';
+import * as tfconv from '@tensorflow/tfjs-converter';
+import modelJson from "./model/ui-classification.json";
+import modelWeights from "./model/ui-classification.weights.bin";
 
 /////////////////////
 // local variables //
@@ -13,6 +16,8 @@ var previousDataUri;
 var currentDataUri;
 var cursorX = 0;
 var cursorY = 0;
+var model;
+var transferModel;
 
 ////////////////
 // core logic //
@@ -176,13 +181,32 @@ const classifyCropImage = async (dataURI) => {
     const classifyImg = document.createElement('img');
 
     classifyImg.onload = async function () {
-      const model = await mobilenet.load();
-      const res = await model.classify(classifyImg);
-      resolve(res)
+      if(model && transferModel){
+        const resTensor = await model.infer(classifyImg, true);
+        const res = await transferModel.predict(resTensor);
+        console.log(res);
+        // console.log(modelCaption);
+        resolve("")
+      } 
     }
 
     classifyImg.src = dataURI;
   })
+}
+
+const loadClassificationModel = async() => {
+  model = await mobilenet.load();
+  // console.log(modelWeights);
+  // console.log(modelJson);
+
+  const modelWeightsBlob = new Blob([JSON.stringify(modelWeights)], {type: 'application'});
+  const modelJsonBlob = new Blob([JSON.stringify(modelJson)], {type: 'application/json'});
+
+  const modelWeightsFile = new File([modelWeightsBlob], 'ui-classification.weights.bin', {type: 'application'});
+  const modelJsonFile = new File([modelJsonBlob], 'ui-classfication.json', {type: 'application/json'});
+
+  transferModel = await tf.loadLayersModel(tf.io.browserFiles([modelJsonFile, modelWeightsFile]));
+  // const transferModel = await tfconv.loadLayersModel(modelJson, modelWeights);
 }
 
 /**
@@ -217,6 +241,7 @@ const postCursorCoordinate = async () => {
 const launchCycle = async () => {
   await setActivityStatus(true);
   await setActivityBadge(true);
+  loadClassificationModel();
   sendReadyMessage();
 };
 
@@ -272,9 +297,10 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
       currentDataUri &&
         cropDataUri(currentDataUri, x, y, width, height).then(async (res) => {
           const category = await classifyCropImage(res);
-          console.log(category);
+          // console.log(category);
           sendCropDone(sender.tab.id, res);
         });
+      break;
     default:
       break;
   }
