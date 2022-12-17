@@ -1,5 +1,4 @@
 import * as tf from '@tensorflow/tfjs';
-import * as tfconv from '@tensorflow/tfjs-converter';
 import modelJson from "./model/ui-classification.json";
 import modelWeights from "./model/ui-classification.weights.bin";
 
@@ -183,8 +182,17 @@ const classifyCropImage = async (dataURI) => {
     classifyImg.onload = async function () {
       if(model && transferModel){
         const resTensor = await model.infer(classifyImg, true);
-        const res = await transferModel.predict(resTensor);
-        console.log(res);
+        const prediction = await transferModel.predict(resTensor).squeeze();
+        const highestIndex = prediction.argMax().arraySync();
+        const predictionArray = prediction.arraySync();
+
+        console.log(
+          "Prediction: " +
+            highestIndex +
+            " with " +
+            Math.floor(predictionArray[highestIndex] * 100) +
+            "% confidence"
+        );
         // console.log(modelCaption);
         resolve("")
       } 
